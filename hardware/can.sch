@@ -10,7 +10,6 @@ LIBS:cmos4000
 LIBS:adc-dac
 LIBS:memory
 LIBS:xilinx
-LIBS:special
 LIBS:microcontrollers
 LIBS:dsp
 LIBS:microchip
@@ -30,32 +29,52 @@ LIBS:atmel
 LIBS:contrib
 LIBS:valves
 LIBS:tinkerforge
+LIBS:Zilog
+LIBS:Xicor
 LIBS:video
 LIBS:ttl_ieee
 LIBS:transf
+LIBS:switches
 LIBS:supertex
 LIBS:stm32
 LIBS:stm8
+LIBS:silabs
 LIBS:sensors
 LIBS:rfcom
 LIBS:relays
 LIBS:references
 LIBS:pspice
+LIBS:Power_Management
 LIBS:powerint
+LIBS:Oscillators
+LIBS:onsemi
 LIBS:nxp_armmcu
+LIBS:nordicsemi
 LIBS:msp430
+LIBS:motor_drivers
+LIBS:microchip_pic32mcu
+LIBS:microchip_pic18mcu
 LIBS:microchip_pic16mcu
 LIBS:microchip_pic12mcu
 LIBS:microchip_pic10mcu
+LIBS:microchip_dspic33dsc
+LIBS:maxim
 LIBS:logo
+LIBS:Lattice
+LIBS:ir
 LIBS:hc11
 LIBS:graphic
 LIBS:gennum
 LIBS:ftdi
+LIBS:ESD_Protection
 LIBS:elec-unifil
+LIBS:diode
 LIBS:dc-dc
 LIBS:cmos_ieee
 LIBS:brooktre
+LIBS:analog_devices
+LIBS:Altera
+LIBS:actel
 LIBS:ac-dc
 LIBS:74xgxx
 LIBS:can-cache
@@ -306,24 +325,12 @@ F 3 "" H 5900 4050 60  0000 C CNN
 	1    5900 4050
 	1    0    0    -1  
 $EndComp
-$Comp
-L MCP2515 U2
-U 1 1 56423560
-P 3900 4550
-F 0 "U2" H 3500 5300 60  0000 C CNN
-F 1 "MCP2515" H 4150 3800 60  0000 C CNN
-F 2 "kicad-libraries:SOIC-18" H 3900 5000 60  0001 C CNN
-F 3 "" H 3900 5000 60  0000 C CNN
-	1    3900 4550
-	1    0    0    -1  
-$EndComp
 NoConn ~ 3350 4600
 NoConn ~ 3350 4700
 NoConn ~ 3350 4800
 NoConn ~ 3350 5000
 NoConn ~ 3350 5100
 NoConn ~ 4450 4200
-NoConn ~ 3350 3900
 $Comp
 L R_PACK4 RP1
 U 1 1 5642390A
@@ -952,4 +959,41 @@ F 3 "" H 4250 2400 60  0000 C CNN
 	1    4250 2400
 	1    0    0    -1  
 $EndComp
+$Comp
+L VCC #PWR?
+U 1 1 56AF6D04
+P 3250 3550
+F 0 "#PWR?" H 3250 3650 30  0001 C CNN
+F 1 "VCC" H 3250 3650 30  0000 C CNN
+F 2 "" H 3250 3550 60  0001 C CNN
+F 3 "" H 3250 3550 60  0001 C CNN
+	1    3250 3550
+	1    0    0    -1  
+$EndComp
+$Comp
+L MCP2515 U2
+U 1 1 56423560
+P 3900 4550
+F 0 "U2" H 3500 5300 60  0000 C CNN
+F 1 "MCP2515" H 4150 3800 60  0000 C CNN
+F 2 "kicad-libraries:SOIC-18" H 3900 5000 60  0001 C CNN
+F 3 "" H 3900 5000 60  0000 C CNN
+	1    3900 4550
+	1    0    0    -1  
+$EndComp
+$Comp
+L R R?
+U 1 1 56AF7184
+P 3250 3750
+F 0 "R?" V 3330 3750 50  0000 C CNN
+F 1 "10k" V 3250 3750 50  0000 C CNN
+F 2 "kicad-libraries:0603E" H 3250 3750 60  0001 C CNN
+F 3 "" H 3250 3750 60  0001 C CNN
+	1    3250 3750
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	3350 3900 3250 3900
+Wire Wire Line
+	3250 3600 3250 3550
 $EndSCHEMATC
