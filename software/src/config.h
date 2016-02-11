@@ -56,11 +56,11 @@
 #define INST_READ                            0b00000011
 #define INST_READ_RX_BUFFER_base             0b10010000
 #define INST_WRITE                           0b00000010
-#define INST_LOAD_TX_BUFFER_base             0b01000000
+#define INST_WRITE_TX_BUFFER_base            0b01000000
 //#define INST_RTS                             0b10000nnn
 #define INST_READ_STATUS                     0b10100000
-#define INST_RX_STATUS                       0b10110000
-#define INST_BIT_MODIFY                      0b00000101
+#define INST_READ_RX_STATUS                  0b10110000
+#define INST_WRITE_BITS                      0b00000101
 
 #define INST_READ_STATUS_CANINTF_TX2IF       0b10000000
 #define INST_READ_STATUS_TXB2CTRL_TXREQ      0b01000000
@@ -146,6 +146,8 @@
 #define REG_CANSTAT_OPMOD_READ_ONLY          0b01100000
 #define REG_CANSTAT_OPMOD_CONFIG             0b10000000
 
+#define REG_CANSTAT_ICOD_mask                0b00001110
+
 #define REG_CANCTRL_REQOP_mask               0b11100000
 #define REG_CANCTRL_REQOP_NORMAL             0b00000000
 #define REG_CANCTRL_REQOP_SLEEP              0b00100000
@@ -183,6 +185,15 @@
 #define REG_CANINTF_TX0IF                    0b00000100
 #define REG_CANINTF_RX1IF                    0b00000010
 #define REG_CANINTF_RX0IF                    0b00000001
+
+#define REG_CANINTE_MERRE                    0b10000000
+#define REG_CANINTE_WAKIE                    0b01000000
+#define REG_CANINTE_ERRIE                    0b00100000
+#define REG_CANINTE_TX2IE                    0b00010000
+#define REG_CANINTE_TX1IE                    0b00001000
+#define REG_CANINTE_TX0IE                    0b00000100
+#define REG_CANINTE_RX1IE                    0b00000010
+#define REG_CANINTE_RX0IE                    0b00000001
 
 #define REG_EFLG_RX1OVR                      0b10000000
 #define REG_EFLG_RX0OVR                      0b01000000

@@ -168,7 +168,7 @@ void constructor(void) {
 	//mcp2515_bit_modify(REG_RXB0CTRL, REG_RXBnCTRL_RXM_mask, REG_RXBnCTRL_RXM_DISABLED);
 
 	// Configure one-shot mode and switch to requested mode
-	mcp2515_bit_modify(REG_CANCTRL, REG_CANCTRL_REQOP_mask | REG_CANCTRL_OSM,
+	mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask | REG_CANCTRL_OSM,
 	                   transceiver_mode_canctrl[BC->transceiver_mode] |
 	                   (BC->write_timeout < 0 ? REG_CANCTRL_OSM : 0));
 }
@@ -193,13 +193,13 @@ void tick(const uint8_t tick_type) {
 		if (BC->entering_config_mode) {
 			BA->printf("%u: EC\n\r", BC->tick);
 
-			mcp2515_bit_modify(REG_CANCTRL, REG_CANCTRL_REQOP_mask, REG_CANCTRL_REQOP_CONFIG);
+			mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask, REG_CANCTRL_REQOP_CONFIG);
 
 			const uint8_t canstat = mcp2515_read_register(REG_CANSTAT);
 
 			if ((canstat & REG_CANSTAT_OPMOD_mask) == REG_CANSTAT_OPMOD_CONFIG) {
 				mcp2515_write_registers(REG_CNF3, baud_rate_cnf[BC->baud_rate], 3);
-				mcp2515_bit_modify(REG_CANCTRL, REG_CANCTRL_REQOP_mask | REG_CANCTRL_OSM,
+				mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask | REG_CANCTRL_OSM,
 				                   transceiver_mode_canctrl[BC->transceiver_mode] |
 				                   (BC->write_timeout < 0 ? REG_CANCTRL_OSM : 0));
 
@@ -211,7 +211,7 @@ void tick(const uint8_t tick_type) {
 		if (BC->leaving_config_mode) {
 			BA->printf("%u: LC\n\r", BC->tick);
 
-			mcp2515_bit_modify(REG_CANCTRL, REG_CANCTRL_REQOP_mask,
+			mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask,
 			                   transceiver_mode_canctrl[BC->transceiver_mode]);
 
 			const uint8_t canstat = mcp2515_read_register(REG_CANSTAT);
@@ -235,8 +235,8 @@ void tick(const uint8_t tick_type) {
 					const uint8_t *txb = BC->txb[BC->txb_start];
 					BC->txb_start = (BC->txb_start + 1) % BUFFER_COUNT;
 
-					mcp2515_load_tx_buffer(0, txb, BUFFER_LENGTH);
-					mcp2515_bit_modify(REG_TXB0CTRL, REG_TXBnCTRL_TXREQ, REG_TXBnCTRL_TXREQ);
+					mcp2515_write_tx_buffer(0, txb, BUFFER_LENGTH);
+					mcp2515_write_bits(REG_TXB0CTRL, REG_TXBnCTRL_TXREQ, REG_TXBnCTRL_TXREQ);
 
 					BA->printf("%u: W0\n\r", BC->tick);
 				}
@@ -263,7 +263,7 @@ void tick(const uint8_t tick_type) {
 					BC->error_mask |= ERROR_READ_REGISTER_FULL;
 				}
 
-				mcp2515_bit_modify(REG_EFLG, eflg_mask, 0);
+				mcp2515_write_bits(REG_EFLG, eflg_mask, 0);
 			}
 
 			// Read frame
@@ -314,7 +314,7 @@ void tick(const uint8_t tick_type) {
 				canintf_mask |= REG_CANINTF_RX0IF;
 			}
 
-			mcp2515_bit_modify(REG_CANINTF, canintf_mask, 0);
+			mcp2515_write_bits(REG_CANINTF, canintf_mask, 0);
 		}
 	}
 
@@ -419,8 +419,8 @@ void mcp2515_write_registers(const uint8_t reg, const uint8_t *data, const uint8
 	SPI_CS.pio->PIO_SODR = SPI_CS.mask;
 }
 
-void mcp2515_load_tx_buffer(const uint8_t index, const uint8_t *data, const uint8_t length) {
-	mcp2515_instruction(INST_LOAD_TX_BUFFER_base | (index * 2), data, length, NULL, 0);
+void mcp2515_write_tx_buffer(const uint8_t index, const uint8_t *data, const uint8_t length) {
+	mcp2515_instruction(INST_WRITE_TX_BUFFER_base | (index * 2), data, length, NULL, 0);
 }
 
 uint8_t mcp2515_read_status(void) {
@@ -431,18 +431,18 @@ uint8_t mcp2515_read_status(void) {
 	return data;
 }
 
-uint8_t mcp2515_rx_status(void) {
+uint8_t mcp2515_read_rx_status(void) {
 	uint8_t data;
 
-	mcp2515_instruction(INST_RX_STATUS, NULL, 0, &data, 1);
+	mcp2515_instruction(INST_READ_RX_STATUS, NULL, 0, &data, 1);
 
 	return data;
 }
 
-void mcp2515_bit_modify(const uint8_t reg, const uint8_t mask, const uint8_t data) {
+void mcp2515_write_bits(const uint8_t reg, const uint8_t mask, const uint8_t data) {
 	const uint8_t req[3] = { reg, mask, data };
 
-	mcp2515_instruction(INST_BIT_MODIFY, req, 3, NULL, 0);
+	mcp2515_instruction(INST_WRITE_BITS, req, 3, NULL, 0);
 }
 
 void write_frame(const ComType com, const WriteFrame *data) {

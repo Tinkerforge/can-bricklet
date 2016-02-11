@@ -125,10 +125,10 @@ uint8_t mcp2515_read_register(const uint8_t reg);
 void mcp2515_read_registers(const uint8_t reg, uint8_t *data, const uint8_t length);
 void mcp2515_write_register(const uint8_t reg, const uint8_t data);
 void mcp2515_write_registers(const uint8_t reg, const uint8_t *data, const uint8_t length);
-void mcp2515_load_tx_buffer(const uint8_t index, const uint8_t *data, const uint8_t length);
+void mcp2515_write_tx_buffer(const uint8_t index, const uint8_t *data, const uint8_t length);
 uint8_t mcp2515_read_status(void);
-uint8_t mcp2515_rx_status(void);
-void mcp2515_bit_modify(const uint8_t reg, const uint8_t mask, const uint8_t data);
+uint8_t mcp2515_read_rx_status(void);
+void mcp2515_write_bits(const uint8_t reg, const uint8_t mask, const uint8_t data);
 
 void write_frame(const ComType com, const WriteFrame *data);
 void read_frame(const ComType com, const ReadFrame *data);
