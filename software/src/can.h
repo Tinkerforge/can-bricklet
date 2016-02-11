@@ -28,9 +28,12 @@
 
 #define FID_WRITE_FRAME 1
 #define FID_READ_FRAME 2
-#define FID_SET_CONFIGURATION 3
-#define FID_GET_CONFIGURATION 4
-#define FID_ERROR 5
+#define FID_ENABLE_FRAME_READ_CALLBACK 3
+#define FID_DISABLE_FRAME_READ_CALLBACK 4
+#define FID_IS_FRAME_READ_CALLBACK_ENABLED 5
+#define FID_SET_CONFIGURATION 6
+#define FID_GET_CONFIGURATION 7
+#define FID_FRAME_READ 8
 
 #define BAUD_RATE_10000 0
 #define BAUD_RATE_20000 1
@@ -55,8 +58,12 @@
 #define FILTER_MODE_MATCH_STANDARD_AND_DATA 2
 #define FILTER_MODE_MATCH_EXTENDED 3
 
-#define ERROR_READ_REGISTER_FULL (1 << 0)
-#define ERROR_READ_BUFFER_FULL (1 << 1)
+typedef struct {
+	uint8_t frame_type;
+	uint32_t identifier;
+	uint8_t data[8];
+	uint8_t length;
+} __attribute__((__packed__)) Frame;
 
 typedef struct {
 	MessageHeader header;
@@ -64,10 +71,7 @@ typedef struct {
 
 typedef struct {
 	MessageHeader header;
-	uint8_t frame_type;
-	uint32_t identifier;
-	uint8_t data[8];
-	uint8_t length;
+	Frame frame;
 } __attribute__((__packed__)) WriteFrame;
 
 typedef struct {
@@ -82,10 +86,7 @@ typedef struct {
 typedef struct {
 	MessageHeader header;
 	bool success;
-	uint8_t frame_type;
-	uint32_t identifier;
-	uint8_t data[8];
-	uint8_t length;
+	Frame frame;
 } __attribute__((__packed__)) ReadFrameReturn;
 
 typedef struct {
@@ -108,8 +109,25 @@ typedef struct {
 
 typedef struct {
 	MessageHeader header;
-	uint32_t error_mask;
-} __attribute__((__packed__)) Error;
+} __attribute__((__packed__)) EnableFrameReadCallback;
+
+typedef struct {
+	MessageHeader header;
+} __attribute__((__packed__)) DisableFrameReadCallback;
+
+typedef struct {
+	MessageHeader header;
+} __attribute__((__packed__)) IsFrameReadCallbackEnabled;
+
+typedef struct {
+	MessageHeader header;
+	bool enabled;
+} __attribute__((__packed__)) IsFrameReadCallbackEnabledReturn;
+
+typedef struct {
+	MessageHeader header;
+	Frame frame;
+} __attribute__((__packed__)) FrameRead;
 
 void constructor(void);
 void destructor(void);
@@ -130,8 +148,15 @@ uint8_t mcp2515_read_status(void);
 uint8_t mcp2515_read_rx_status(void);
 void mcp2515_write_bits(const uint8_t reg, const uint8_t mask, const uint8_t data);
 
+bool txb_enqueue(const Frame *frame);
+bool rxb_dequeue(Frame *frame);
+
 void write_frame(const ComType com, const WriteFrame *data);
 void read_frame(const ComType com, const ReadFrame *data);
+
+void enable_frame_read_callback(const ComType com, const EnableFrameReadCallback *data);
+void disable_frame_read_callback(const ComType com, const DisableFrameReadCallback *data);
+void is_frame_read_callback_enabled(const ComType com, const IsFrameReadCallbackEnabled *data);
 
 void set_configuration(const ComType com, const SetConfiguration *data);
 void get_configuration(const ComType com, const GetConfiguration *data);

@@ -119,7 +119,8 @@ void constructor(void) {
 
 	BC->read_callback_enabled = false;
 
-	BC->error_mask = 0;
+	BC->read_register_overflows = 0;
+	BC->read_buffer_overflows = 0;
 
 	BC->entering_config_mode = false;
 	BC->leaving_config_mode = false;
@@ -178,10 +179,13 @@ void destructor(void) {
 
 void invocation(const ComType com, const uint8_t *data) {
 	switch (((StandardMessage*)data)->header.fid) {
-		case FID_WRITE_FRAME:       write_frame(com, (WriteFrame *)data); break;
-		case FID_READ_FRAME:        read_frame(com, (ReadFrame *)data); break;
-		case FID_SET_CONFIGURATION: set_configuration(com, (SetConfiguration *)data); break;
-		case FID_GET_CONFIGURATION: get_configuration(com, (GetConfiguration *)data); break;
+		case FID_WRITE_FRAME:                    write_frame(com, (WriteFrame *)data); break;
+		case FID_READ_FRAME:                     read_frame(com, (ReadFrame *)data); break;
+		case FID_ENABLE_FRAME_READ_CALLBACK:     enable_frame_read_callback(com, (EnableFrameReadCallback*)data); break;
+		case FID_DISABLE_FRAME_READ_CALLBACK:    disable_frame_read_callback(com, (DisableFrameReadCallback*)data); break;
+		case FID_IS_FRAME_READ_CALLBACK_ENABLED: is_frame_read_callback_enabled(com, (IsFrameReadCallbackEnabled*)data); break;
+		case FID_SET_CONFIGURATION:              set_configuration(com, (SetConfiguration *)data); break;
+		case FID_GET_CONFIGURATION:              get_configuration(com, (GetConfiguration *)data); break;
 		default: BA->com_return_error(data, sizeof(MessageHeader), MESSAGE_ERROR_CODE_NOT_SUPPORTED, com); break;
 	}
 }
@@ -252,7 +256,7 @@ void tick(const uint8_t tick_type) {
 					BA->printf("%u: R1 rf\n\r", BC->tick);
 
 					eflg_mask |= REG_EFLG_RX1OVR;
-					BC->error_mask |= ERROR_READ_REGISTER_FULL;
+					BC->read_register_overflows++;
 				}
 
 				if ((eflg & REG_EFLG_RX0OVR) != 0) {
@@ -260,7 +264,7 @@ void tick(const uint8_t tick_type) {
 					BA->printf("%u: R0 rf\n\r", BC->tick);
 
 					eflg_mask |= REG_EFLG_RX0OVR;
-					BC->error_mask |= ERROR_READ_REGISTER_FULL;
+					BC->read_register_overflows++;
 				}
 
 				mcp2515_write_bits(REG_EFLG, eflg_mask, 0);
@@ -285,9 +289,10 @@ void tick(const uint8_t tick_type) {
 				} else {
 					BA->printf("%u: R1 bf\n\r", BC->tick);
 					rxb = dropped;
-					BC->error_mask |= ERROR_READ_BUFFER_FULL;
+					BC->read_buffer_overflows++;
 				}
 
+				// FIXME: only read DLC number of bytes to avoid unnecessary reads
 				mcp2515_read_registers(REG_RXB1SIDH, rxb, BUFFER_LENGTH);
 
 				canintf_mask |= REG_CANINTF_RX1IF;
@@ -306,9 +311,10 @@ void tick(const uint8_t tick_type) {
 				} else {
 					BA->printf("%u: R0 bf\n\r", BC->tick);
 					rxb = dropped;
-					BC->error_mask |= ERROR_READ_BUFFER_FULL;
+					BC->read_buffer_overflows++;
 				}
 
+				// FIXME: only read DLC number of bytes to avoid unnecessary reads
 				mcp2515_read_registers(REG_RXB0SIDH, rxb, BUFFER_LENGTH);
 
 				canintf_mask |= REG_CANINTF_RX0IF;
@@ -319,18 +325,14 @@ void tick(const uint8_t tick_type) {
 	}
 
 	if (tick_type & TICK_TASK_TYPE_MESSAGE) {
-		if (BC->error_mask != 0) {
-			BA->printf("%u: E %x\n\r", BC->tick, BC->error_mask);
+		if (BC->read_callback_enabled && BC->rxb_start != BC->rxb_end) {
+			FrameRead fr;
 
-			Error e;
+			BA->com_make_default_header(&fr, BS->uid, sizeof(fr), FID_FRAME_READ);
 
-			BA->com_make_default_header(&e, BS->uid, sizeof(e), FID_ERROR);
+			rxb_dequeue(&fr.frame);
 
-			e.error_mask = BC->error_mask;
-
-			BA->send_blocking_with_timeout(&e, sizeof(e), *BA->com_current);
-
-			BC->error_mask = 0;
+			BA->send_blocking_with_timeout(&fr, sizeof(fr), *BA->com_current);
 		}
 	}
 }
@@ -445,11 +447,94 @@ void mcp2515_write_bits(const uint8_t reg, const uint8_t mask, const uint8_t dat
 	mcp2515_instruction(INST_WRITE_BITS, req, 3, NULL, 0);
 }
 
+bool txb_enqueue(const Frame *frame) {
+	if ((BC->txb_end + 1) % BUFFER_COUNT == BC->txb_start) {
+		return false;
+	}
+
+	uint8_t *txb = BC->txb[BC->txb_end];
+	BC->txb_end = (BC->txb_end + 1) % BUFFER_COUNT;
+
+	// TXBnSIDH
+	txb[0] = (frame->identifier >> 3) & 0xFF;
+
+	// TXBnSIDL
+	txb[1] = ((frame->identifier & 0b00000111) << 5) |
+	         (frame->frame_type == FRAME_TYPE_EXTENDED_DATA ||
+	          frame->frame_type == FRAME_TYPE_EXTENDED_REMOTE ? REG_TXBnSIDL_EXIDE : 0) |
+	         ((frame->identifier >> 27) & 0b00000011);
+
+	// TXBnEID8
+	txb[2] = (frame->identifier >> 19) & 0xFF;
+
+	// TXBnEID0
+	txb[3] = (frame->identifier >> 11) & 0xFF;
+
+	// TXBnDLC
+	txb[4] = (frame->frame_type == FRAME_TYPE_STANDARD_REMOTE ||
+	          frame->frame_type == FRAME_TYPE_EXTENDED_REMOTE ? REG_TXBnDLC_RTR : 0) |
+	         frame->length;
+
+	// TXBnDm
+	for (uint8_t i = 0; i < 8; ++i) {
+		txb[5 + i] = frame->data[i];
+	}
+
+	return true;
+}
+
+bool rxb_dequeue(Frame *frame) {
+	if (BC->rxb_start == BC->rxb_end) {
+		return false;
+	}
+
+	const uint8_t *rxb = BC->rxb[BC->rxb_start];
+	BC->rxb_start = (BC->rxb_start + 1) % BUFFER_COUNT;
+
+	// frame type
+	if ((rxb[1] & REG_RXBnSIDL_IDE) == 0) {
+		if ((rxb[1] & REG_RXBnSIDL_SRR) == 0) {
+			frame->frame_type = FRAME_TYPE_STANDARD_DATA;
+		} else {
+			frame->frame_type = FRAME_TYPE_STANDARD_REMOTE;
+		}
+	} else {
+		if ((rxb[4] & REG_RXBnDLC_RTR) == 0) {
+			frame->frame_type = FRAME_TYPE_EXTENDED_DATA;
+		} else {
+			frame->frame_type = FRAME_TYPE_EXTENDED_REMOTE;
+		}
+	}
+
+	// identifier
+	frame->identifier = ((uint32_t)rxb[0] << 3) | (rxb[1] >> 5);
+
+	if (frame->frame_type == FRAME_TYPE_EXTENDED_DATA || frame->frame_type == FRAME_TYPE_EXTENDED_REMOTE) {
+		frame->identifier |= (((uint32_t)rxb[1] & 0b00000011) << 16) | ((uint32_t)rxb[2] << 8) | rxb[3];
+	}
+
+	// length
+	frame->length = rxb[4] & 0b00001111;
+
+	// data
+	for (uint8_t i = 0; i < frame->length && i < 8; ++i) {
+		frame->data[i] = rxb[5 + i];
+	}
+
+	for (uint8_t i = frame->length; i < 8; ++i) {
+		frame->data[i] = 0;
+	}
+
+	return true;
+}
+
 void write_frame(const ComType com, const WriteFrame *data) {
-	if (data->frame_type > FRAME_TYPE_EXTENDED_REMOTE ||
-	    ((data->frame_type == FRAME_TYPE_STANDARD_DATA || data->frame_type == FRAME_TYPE_STANDARD_REMOTE) && data->identifier > 0x7FF) ||
-	    data->identifier > 0x1FFFFFFF ||
-	    data->length > 0b00001111) {
+	if (data->frame.frame_type > FRAME_TYPE_EXTENDED_REMOTE ||
+	    ((data->frame.frame_type == FRAME_TYPE_STANDARD_DATA ||
+	      data->frame.frame_type == FRAME_TYPE_STANDARD_REMOTE) &&
+	     data->frame.identifier > 0x7FF) ||
+	    data->frame.identifier > 0x1FFFFFFF ||
+	    data->frame.length > 0b00001111) {
 		BA->com_return_error(data, sizeof(MessageHeader), MESSAGE_ERROR_CODE_INVALID_PARAMETER, com);
 		return;
 	}
@@ -458,37 +543,7 @@ void write_frame(const ComType com, const WriteFrame *data) {
 
 	wfr.header        = data->header;
 	wfr.header.length = sizeof(wfr);
-	wfr.success       = (BC->txb_end + 1) % BUFFER_COUNT != BC->txb_start;
-
-	if (wfr.success) {
-		uint8_t *txb = BC->txb[BC->txb_end];
-		BC->txb_end = (BC->txb_end + 1) % BUFFER_COUNT;
-
-		// TXBnSIDH
-		txb[0] = (data->identifier >> 3) & 0xFF;
-
-		// TXBnSIDL
-		txb[1] = ((data->identifier & 0b00000111) << 5) |
-		         (data->frame_type == FRAME_TYPE_EXTENDED_DATA ||
-		          data->frame_type == FRAME_TYPE_EXTENDED_REMOTE ? REG_TXBnSIDL_EXIDE : 0) |
-		         ((data->identifier >> 27) & 0b00000011);
-
-		// TXBnEID8
-		txb[2] = (data->identifier >> 19) & 0xFF;
-
-		// TXBnEID0
-		txb[3] = (data->identifier >> 11) & 0xFF;
-
-		// TXBnDLC
-		txb[4] = (data->frame_type == FRAME_TYPE_STANDARD_REMOTE ||
-		          data->frame_type == FRAME_TYPE_EXTENDED_REMOTE ? REG_TXBnDLC_RTR : 0) |
-		          data->length;
-
-		// TXBnDm
-		for (uint8_t i = 0; i < 8; ++i) {
-			txb[5 + i] = data->data[i];
-		}
-	}
+	wfr.success       = txb_enqueue(&data->frame);
 
 	BA->send_blocking_with_timeout(&wfr, sizeof(wfr), com);
 }
@@ -498,48 +553,29 @@ void read_frame(const ComType com, const ReadFrame *data) {
 
 	rfr.header        = data->header;
 	rfr.header.length = sizeof(rfr);
-	rfr.success       = BC->rxb_start != BC->rxb_end;
-
-	if (rfr.success) {
-		const uint8_t *rxb = BC->rxb[BC->rxb_start];
-		BC->rxb_start = (BC->rxb_start + 1) % BUFFER_COUNT;
-
-		// frame type
-		if ((rxb[1] & REG_RXBnSIDL_IDE) == 0) {
-			if ((rxb[1] & REG_RXBnSIDL_SRR) == 0) {
-				rfr.frame_type = FRAME_TYPE_STANDARD_DATA;
-			} else {
-				rfr.frame_type = FRAME_TYPE_STANDARD_REMOTE;
-			}
-		} else {
-			if ((rxb[4] & REG_RXBnDLC_RTR) == 0) {
-				rfr.frame_type = FRAME_TYPE_EXTENDED_DATA;
-			} else {
-				rfr.frame_type = FRAME_TYPE_EXTENDED_REMOTE;
-			}
-		}
-
-		// identifier
-		rfr.identifier = ((uint32_t)rxb[0] << 3) | (rxb[1] >> 5);
-
-		if (rfr.frame_type == FRAME_TYPE_EXTENDED_DATA || rfr.frame_type == FRAME_TYPE_EXTENDED_REMOTE) {
-			rfr.identifier |= (((uint32_t)rxb[1] & 0b00000011) << 16) | ((uint32_t)rxb[2] << 8) | rxb[3];
-		}
-
-		// length
-		rfr.length = rxb[4] & 0b00001111;
-
-		// data
-		for (uint8_t i = 0; i < rfr.length && i < 8; ++i) {
-			rfr.data[i] = rxb[5 + i];
-		}
-
-		for (uint8_t i = rfr.length; i < 8; ++i) {
-			rfr.data[i] = 0;
-		}
-	}
+	rfr.success       = rxb_dequeue(&rfr.frame);
 
 	BA->send_blocking_with_timeout(&rfr, sizeof(rfr), com);
+}
+
+void enable_frame_read_callback(const ComType com, const EnableFrameReadCallback *data) {
+	BC->read_callback_enabled = true;
+	BA->com_return_setter(com, data);
+}
+
+void disable_frame_read_callback(const ComType com, const DisableFrameReadCallback *data) {
+	BC->read_callback_enabled = false;
+	BA->com_return_setter(com, data);
+}
+
+void is_frame_read_callback_enabled(const ComType com, const IsFrameReadCallbackEnabled *data) {
+	IsFrameReadCallbackEnabledReturn ifrcer;
+
+	ifrcer.header         = data->header;
+	ifrcer.header.length  = sizeof(ifrcer);
+	ifrcer.enabled        = BC->read_callback_enabled;
+
+	BA->send_blocking_with_timeout(&ifrcer, sizeof(ifrcer), com);
 }
 
 void set_configuration(const ComType com, const SetConfiguration *data) {

@@ -242,7 +242,8 @@ typedef struct {
 
 	bool read_callback_enabled;
 
-	uint32_t error_mask;
+	uint32_t read_register_overflows;
+	uint32_t read_buffer_overflows;
 
 	bool entering_config_mode;
 	bool leaving_config_mode;
