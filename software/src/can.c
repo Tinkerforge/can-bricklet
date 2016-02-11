@@ -111,19 +111,20 @@ void constructor(void) {
 	_Static_assert(sizeof(BrickContext) <= BRICKLET_CONTEXT_MAX_SIZE,
 	               "BrickContext too big");
 
+	BC->status = 0;
+
 	BC->txb_start = 0;
 	BC->txb_end = 0;
+
+	for (uint8_t i = 0; i < 5; ++i) {
+		BC->txb0_header[i] = 0;
+	}
 
 	BC->rxb_start = 0;
 	BC->rxb_end = 0;
 
-	BC->read_callback_enabled = false;
-
 	BC->read_register_overflows = 0;
 	BC->read_buffer_overflows = 0;
-
-	BC->entering_config_mode = false;
-	BC->leaving_config_mode = false;
 
 	BC->baud_rate = BAUD_RATE_125000;
 	BC->transceiver_mode = TRANSCEIVER_MODE_NORMAL;
@@ -133,8 +134,6 @@ void constructor(void) {
 	BC->filter_mask = 0;
 	BC->filter1 = 0;
 	BC->filter2 = 0;
-
-	BC->tick = 0;
 
 	// Pins
 	SPI_CS.type = PIO_OUTPUT_1;
@@ -156,7 +155,7 @@ void constructor(void) {
 	// Reset
 	SLEEP_MS(2);
 	mcp2515_reset(); // Enters config mode
-	SLEEP_US(100);
+	SLEEP_US(200);
 
 	// Set baud rate
 	mcp2515_write_registers(REG_CNF3, baud_rate_cnf[BC->baud_rate], 3);
@@ -186,146 +185,124 @@ void invocation(const ComType com, const uint8_t *data) {
 		case FID_IS_FRAME_READ_CALLBACK_ENABLED: is_frame_read_callback_enabled(com, (IsFrameReadCallbackEnabled*)data); break;
 		case FID_SET_CONFIGURATION:              set_configuration(com, (SetConfiguration *)data); break;
 		case FID_GET_CONFIGURATION:              get_configuration(com, (GetConfiguration *)data); break;
-		default: BA->com_return_error(data, sizeof(MessageHeader), MESSAGE_ERROR_CODE_NOT_SUPPORTED, com); break;
+		default:                                 BA->com_return_error(data, sizeof(MessageHeader), MESSAGE_ERROR_CODE_NOT_SUPPORTED, com); break;
 	}
 }
 
 void tick(const uint8_t tick_type) {
 	if (tick_type & TICK_TASK_TYPE_CALCULATION) {
-		BC->tick++;
+		if ((BC->status & STATUS_ENTERING_CONFIG_MODE) != 0) {
+			BA->printf("EC\n\r");
 
-		if (BC->entering_config_mode) {
-			BA->printf("%u: EC\n\r", BC->tick);
+			mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask, REG_CANCTRL_REQOP_CONFIG); // 4 bytes
 
-			mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask, REG_CANCTRL_REQOP_CONFIG);
-
-			const uint8_t canstat = mcp2515_read_register(REG_CANSTAT);
+			const uint8_t canstat = mcp2515_read_register(REG_CANSTAT); // 3 bytes
 
 			if ((canstat & REG_CANSTAT_OPMOD_mask) == REG_CANSTAT_OPMOD_CONFIG) {
-				mcp2515_write_registers(REG_CNF3, baud_rate_cnf[BC->baud_rate], 3);
+				mcp2515_write_registers(REG_CNF3, baud_rate_cnf[BC->baud_rate], 3); // 5 bytes
 				mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask | REG_CANCTRL_OSM,
 				                   transceiver_mode_canctrl[BC->transceiver_mode] |
-				                   (BC->write_timeout < 0 ? REG_CANCTRL_OSM : 0));
+				                   (BC->write_timeout < 0 ? REG_CANCTRL_OSM : 0)); // 4 bytes
 
-				BC->entering_config_mode = false;
-				BC->leaving_config_mode = true;
+				BC->status &= ~STATUS_ENTERING_CONFIG_MODE;
+				BC->status |= STATUS_LEAVING_CONFIG_MODE;
 			}
 		}
 
-		if (BC->leaving_config_mode) {
-			BA->printf("%u: LC\n\r", BC->tick);
+		if ((BC->status & STATUS_LEAVING_CONFIG_MODE) != 0) {
+			BA->printf("LC\n\r");
 
 			mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask,
-			                   transceiver_mode_canctrl[BC->transceiver_mode]);
+			                   transceiver_mode_canctrl[BC->transceiver_mode]); // 4 bytes
 
-			const uint8_t canstat = mcp2515_read_register(REG_CANSTAT);
+			const uint8_t canstat = mcp2515_read_register(REG_CANSTAT); // 3 bytes
 
 			if ((canstat & REG_CANSTAT_OPMOD_mask) == transceiver_mode_canctrl[BC->transceiver_mode]) {
-				BC->leaving_config_mode = false;
+				BC->status &= ~STATUS_LEAVING_CONFIG_MODE;
 			}
 		}
 
-		if (!BC->entering_config_mode && !BC->leaving_config_mode) {
-			const uint8_t status = mcp2515_read_status();
+		if ((BC->status & (STATUS_ENTERING_CONFIG_MODE | STATUS_LEAVING_CONFIG_MODE)) == 0) {
+			const uint8_t status = mcp2515_read_status(); // 2 bytes
 
 			// Write frame
 			if (BC->txb_start != BC->txb_end) {
-				BA->printf("%u: WQ\n\r", BC->tick);
+				BA->printf("WQ\n\r");
 
-				// FIXME: currently only using the first TX buffer for simplicity
+				// FIXME: currently using TXB0 only for simplicity
 				// FIXME: add some sort of timeout handling?
 				// FIXME: read and report/deal with TXBnCTRL.MLOA or TXBnCTRL.TXERR?
 				if ((status & INST_READ_STATUS_TXB0CTRL_TXREQ) == 0) {
 					const uint8_t *txb = BC->txb[BC->txb_start];
 					BC->txb_start = (BC->txb_start + 1) % BUFFER_COUNT;
 
-					mcp2515_write_tx_buffer(0, txb, BUFFER_LENGTH);
-					mcp2515_write_bits(REG_TXB0CTRL, REG_TXBnCTRL_TXREQ, REG_TXBnCTRL_TXREQ);
+					mcp2515_write_txb0(txb); // 0-14 bytes
+					mcp2515_rts_txb0(); // 1 bytes
 
-					BA->printf("%u: W0\n\r", BC->tick);
+					BA->printf("W0\n\r");
 				}
 			}
 
-			// Check if read-registers are full
-			if ((status & (INST_READ_STATUS_CANINTF_RX1IF | INST_READ_STATUS_CANINTF_RX0IF)) != 0) {
-				const uint8_t eflg = mcp2515_read_register(REG_EFLG);
-				uint8_t eflg_mask = 0;
+			// FIXME: maybe don't write and read a frame in the same tick to
+			//        avoid making the tick too long
 
-				if ((eflg & REG_EFLG_RX1OVR) != 0) {
-					// FIXME: report read register overflow
-					BA->printf("%u: R1 rf\n\r", BC->tick);
+			// Read frame from RXB0. There is no point in using RXB1 in
+			// overflow-mode to increase throughput. At best 2000 frames per
+			// second could be received this way. But only 1000 frames per
+			// second can be send to the user program. Also trying to read
+			// the data in correct order from RXB0 and RXB1 is really tricky
+			// and full of race conditions. I've tried to come up with an
+			// algorithm for this, but have failed. For now I keep it simple
+			// and just completely ignore RXB1.
+			if ((status & INST_READ_STATUS_CANINTF_RX0IF) != 0) {
+				BA->printf("R0\n\r");
 
-					eflg_mask |= REG_EFLG_RX1OVR;
-					BC->read_register_overflows++;
-				}
+				const uint8_t eflg = mcp2515_read_register(REG_EFLG); // 3 bytes
 
 				if ((eflg & REG_EFLG_RX0OVR) != 0) {
-					// FIXME: report read register overflow
-					BA->printf("%u: R0 rf\n\r", BC->tick);
+					BA->printf("R0 regovr\n\r");
 
-					eflg_mask |= REG_EFLG_RX0OVR;
 					BC->read_register_overflows++;
+
+					mcp2515_write_bits(REG_EFLG, REG_EFLG_RX0OVR, 0); // 4 bytes
+					//mcp2515_write_register(REG_EFLG, 0); // 3 bytes
 				}
 
-				mcp2515_write_bits(REG_EFLG, eflg_mask, 0);
+				if ((BC->rxb_end + 1) % BUFFER_COUNT != BC->rxb_start) {
+					uint8_t *rxb = BC->rxb[BC->rxb_end];
+					BC->rxb_end = (BC->rxb_end + 1) % BUFFER_COUNT;
+
+					mcp2515_read_rxb0(rxb); // 6-14 bytes
+				} else {
+					BA->printf("R0 bufovr\n\r");
+					BC->read_buffer_overflows++;
+
+					mcp2515_clear_rxb0(); // 1 bytes
+				}
 			}
 
-			// Read frame
-			// FIXME: cannot use the read-rx-buffer instruction here, because it
-			//        would clear RXnIF bit and would allow RXB0 to overflow into
-			//        RXB1 between reading RXB1 and RXB0
-			uint8_t canintf_mask = 0;
-
+			// FIXME: this block is just for debugging
 			if ((status & INST_READ_STATUS_CANINTF_RX1IF) != 0) {
-				BA->printf("%u: R1\n\r", BC->tick);
+				BA->printf("R1 ignore\n\r");
 
-				uint8_t *rxb;
-				uint8_t dropped[BUFFER_LENGTH];
+				const uint8_t eflg = mcp2515_read_register(REG_EFLG);
 
-				// If the read-buffer is full drop the new frame
-				if ((BC->rxb_end + 1) % BUFFER_COUNT != BC->rxb_start) {
-					rxb = BC->rxb[BC->rxb_end];
-					BC->rxb_end = (BC->rxb_end + 1) % BUFFER_COUNT;
-				} else {
-					BA->printf("%u: R1 bf\n\r", BC->tick);
-					rxb = dropped;
-					BC->read_buffer_overflows++;
+				if ((eflg & REG_EFLG_RX1OVR) != 0) {
+					BA->printf("R1 regovr\n\r");
+
+					mcp2515_write_bits(REG_EFLG, REG_EFLG_RX1OVR, 0);
 				}
 
-				// FIXME: only read DLC number of bytes to avoid unnecessary reads
-				mcp2515_read_registers(REG_RXB1SIDH, rxb, BUFFER_LENGTH);
-
-				canintf_mask |= REG_CANINTF_RX1IF;
+				mcp2515_write_bits(REG_CANINTF, REG_CANINTF_RX1IF, 0);
 			}
-
-			if ((status & INST_READ_STATUS_CANINTF_RX0IF) != 0) {
-				BA->printf("%u: R0\n\r", BC->tick);
-
-				uint8_t *rxb;
-				uint8_t dropped[BUFFER_LENGTH];
-
-				// If the read-buffer is full drop the new frame
-				if ((BC->rxb_end + 1) % BUFFER_COUNT != BC->rxb_start) {
-					rxb = BC->rxb[BC->rxb_end];
-					BC->rxb_end = (BC->rxb_end + 1) % BUFFER_COUNT;
-				} else {
-					BA->printf("%u: R0 bf\n\r", BC->tick);
-					rxb = dropped;
-					BC->read_buffer_overflows++;
-				}
-
-				// FIXME: only read DLC number of bytes to avoid unnecessary reads
-				mcp2515_read_registers(REG_RXB0SIDH, rxb, BUFFER_LENGTH);
-
-				canintf_mask |= REG_CANINTF_RX0IF;
-			}
-
-			mcp2515_write_bits(REG_CANINTF, canintf_mask, 0);
 		}
 	}
 
 	if (tick_type & TICK_TASK_TYPE_MESSAGE) {
-		if (BC->read_callback_enabled && BC->rxb_start != BC->rxb_end) {
+		if ((BC->status & STATUS_FRAME_READ_CALLBACK_ENABLED) != 0 &&
+		    BC->rxb_start != BC->rxb_end) {
+			BA->printf("FRC\n\r");
+
 			FrameRead fr;
 
 			BA->com_make_default_header(&fr, BS->uid, sizeof(fr), FID_FRAME_READ);
@@ -337,13 +314,13 @@ void tick(const uint8_t tick_type) {
 	}
 }
 
-uint8_t spibb_transceive_byte(const uint8_t value) { // cpol=1,cpha=1
-	uint8_t recv = 0;
+uint8_t spibb_transceive_byte(const uint8_t req) { // cpol=1,cpha=1
+	uint8_t res = 0;
 
-	for(int8_t i = 7; i >= 0; i--) {
+	for (int8_t i = 7; i >= 0; i--) {
 		SPI_CLK.pio->PIO_CODR = SPI_CLK.mask;
 
-		if((value >> i) & 1) {
+		if ((req & (1 << i)) != 0) {
 			SPI_SDI.pio->PIO_SODR = SPI_SDI.mask;
 		} else {
 			SPI_SDI.pio->PIO_CODR = SPI_SDI.mask;
@@ -351,15 +328,15 @@ uint8_t spibb_transceive_byte(const uint8_t value) { // cpol=1,cpha=1
 
 		SLEEP_US(1);
 
-		if(SPI_SDO.pio->PIO_PDSR & SPI_SDO.mask) {
-			recv |= (1 << i);
+		if ((SPI_SDO.pio->PIO_PDSR & SPI_SDO.mask) != 0) {
+			res |= (1 << i);
 		}
 
 		SPI_CLK.pio->PIO_SODR = SPI_CLK.mask;
 		SLEEP_US(1);
 	}
 
-	return recv;
+	return res;
 }
 
 void mcp2515_instruction(const uint8_t inst, const uint8_t *req, const uint8_t req_length,
@@ -369,11 +346,11 @@ void mcp2515_instruction(const uint8_t inst, const uint8_t *req, const uint8_t r
 
 	spibb_transceive_byte(inst);
 
-	for(uint8_t i = 0; i < req_length; i++) {
+	for (uint8_t i = 0; i < req_length; i++) {
 		spibb_transceive_byte(req[i]);
 	}
 
-	for(uint8_t i = 0; i < res_length; i++) {
+	for (uint8_t i = 0; i < res_length; i++) {
 		res[i] = spibb_transceive_byte(0);
 	}
 
@@ -396,9 +373,27 @@ void mcp2515_read_registers(const uint8_t reg, uint8_t *data, const uint8_t leng
 	mcp2515_instruction(INST_READ, &reg, 1, data, length);
 }
 
-void mcp2515_read_rx_buffer(const uint8_t index, const uint8_t *data, const uint8_t length) {
-	// also clears the corresponding CANINTF.RXnIF bit
-	mcp2515_instruction(INST_READ_RX_BUFFER_base | (index * 2), data, length, NULL, 0);
+void mcp2515_read_rxb0(uint8_t *rxb) {
+	SLEEP_US(1);
+	SPI_CS.pio->PIO_CODR = SPI_CS.mask;
+
+	spibb_transceive_byte(INST_READ_RX_BUFFER_RXB0SIDH);
+
+	for (uint8_t i = 0; i < 5; i++) {
+		rxb[i] = spibb_transceive_byte(0);
+	}
+
+	const uint8_t dlc = (rxb[4] & REG_RXBnDLC_DLC_mask) >> REG_RXBnDLC_DLC_offset;
+
+	for (uint8_t i = 5; i < 5 + dlc && i < BUFFER_LENGTH; i++) {
+		rxb[i] = spibb_transceive_byte(0);
+	}
+
+	SPI_CS.pio->PIO_SODR = SPI_CS.mask; // clears the corresponding CANINTF.RXnIF bit
+}
+
+void mcp2515_clear_rxb0(void) {
+	mcp2515_instruction(INST_READ_RX_BUFFER_RXB0SIDH, NULL, 0, NULL, 0);
 }
 
 void mcp2515_write_register(const uint8_t reg, const uint8_t data) {
@@ -414,15 +409,34 @@ void mcp2515_write_registers(const uint8_t reg, const uint8_t *data, const uint8
 	spibb_transceive_byte(INST_WRITE);
 	spibb_transceive_byte(reg);
 
-	for(uint8_t i = 0; i < length; i++) {
+	for (uint8_t i = 0; i < length; i++) {
 		spibb_transceive_byte(data[i]);
 	}
 
 	SPI_CS.pio->PIO_SODR = SPI_CS.mask;
 }
 
-void mcp2515_write_tx_buffer(const uint8_t index, const uint8_t *data, const uint8_t length) {
-	mcp2515_instruction(INST_WRITE_TX_BUFFER_base | (index * 2), data, length, NULL, 0);
+void mcp2515_write_txb0(const uint8_t *txb) {
+	const uint8_t dlc = MIN((txb[4] & REG_RXBnDLC_DLC_mask) >> REG_RXBnDLC_DLC_offset, 8);
+
+	// FIXME: maybe also cache data segment?
+	if (BC->txb0_header[0] == txb[0] &&
+	    BC->txb0_header[1] == txb[1] &&
+	    BC->txb0_header[2] == txb[2] &&
+	    BC->txb0_header[3] == txb[3] &&
+	    BC->txb0_header[4] == txb[4]) {
+		if (dlc > 0) {
+			mcp2515_instruction(INST_WRITE_TX_BUFFER_TXB0D0, txb + 5, dlc, NULL, 0);
+		}
+	} else {
+		BC->txb0_header[0] = txb[0];
+		BC->txb0_header[1] = txb[1];
+		BC->txb0_header[2] = txb[2];
+		BC->txb0_header[3] = txb[3];
+		BC->txb0_header[4] = txb[4];
+
+		mcp2515_instruction(INST_WRITE_TX_BUFFER_TXB0SIDH, txb, 5 + dlc, NULL, 0);
+	}
 }
 
 uint8_t mcp2515_read_status(void) {
@@ -445,6 +459,10 @@ void mcp2515_write_bits(const uint8_t reg, const uint8_t mask, const uint8_t dat
 	const uint8_t req[3] = { reg, mask, data };
 
 	mcp2515_instruction(INST_WRITE_BITS, req, 3, NULL, 0);
+}
+
+void mcp2515_rts_txb0(void) {
+	mcp2515_instruction(INST_RTS_TXB0, NULL, 0, NULL, 0);
 }
 
 bool txb_enqueue(const Frame *frame) {
@@ -476,7 +494,7 @@ bool txb_enqueue(const Frame *frame) {
 	         frame->length;
 
 	// TXBnDm
-	for (uint8_t i = 0; i < 8; ++i) {
+	for (uint8_t i = 0; frame->length && i < 8; ++i) {
 		txb[5 + i] = frame->data[i];
 	}
 
@@ -514,7 +532,7 @@ bool rxb_dequeue(Frame *frame) {
 	}
 
 	// length
-	frame->length = rxb[4] & 0b00001111;
+	frame->length = (rxb[4] & REG_RXBnDLC_DLC_mask) >> REG_RXBnDLC_DLC_offset;
 
 	// data
 	for (uint8_t i = 0; i < frame->length && i < 8; ++i) {
@@ -549,6 +567,8 @@ void write_frame(const ComType com, const WriteFrame *data) {
 }
 
 void read_frame(const ComType com, const ReadFrame *data) {
+	// Need to zero whole message here because rxb_dequeue will
+	// not touch it if there is no frame to be read
 	ReadFrameReturn rfr = {{0}};
 
 	rfr.header        = data->header;
@@ -559,12 +579,12 @@ void read_frame(const ComType com, const ReadFrame *data) {
 }
 
 void enable_frame_read_callback(const ComType com, const EnableFrameReadCallback *data) {
-	BC->read_callback_enabled = true;
+	BC->status |= STATUS_FRAME_READ_CALLBACK_ENABLED;
 	BA->com_return_setter(com, data);
 }
 
 void disable_frame_read_callback(const ComType com, const DisableFrameReadCallback *data) {
-	BC->read_callback_enabled = false;
+	BC->status &= ~STATUS_FRAME_READ_CALLBACK_ENABLED;
 	BA->com_return_setter(com, data);
 }
 
@@ -573,7 +593,7 @@ void is_frame_read_callback_enabled(const ComType com, const IsFrameReadCallback
 
 	ifrcer.header         = data->header;
 	ifrcer.header.length  = sizeof(ifrcer);
-	ifrcer.enabled        = BC->read_callback_enabled;
+	ifrcer.enabled        = (BC->status & STATUS_FRAME_READ_CALLBACK_ENABLED) != 0;
 
 	BA->send_blocking_with_timeout(&ifrcer, sizeof(ifrcer), com);
 }
@@ -589,8 +609,8 @@ void set_configuration(const ComType com, const SetConfiguration *data) {
 	BC->transceiver_mode = data->transceiver_mode;
 	BC->write_timeout    = data->write_timeout;
 
-	BC->entering_config_mode = true;
-	BC->leaving_config_mode = false;
+	BC->status |= STATUS_ENTERING_CONFIG_MODE;
+	BC->status &= ~STATUS_LEAVING_CONFIG_MODE;
 
 	BA->com_return_setter(com, data);
 }

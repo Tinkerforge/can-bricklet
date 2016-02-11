@@ -54,10 +54,20 @@
 
 #define INST_RESET                           0b11000000
 #define INST_READ                            0b00000011
-#define INST_READ_RX_BUFFER_base             0b10010000
+#define INST_READ_RX_BUFFER_RXB0SIDH         0b10010000
+#define INST_READ_RX_BUFFER_RXB0D0           0b10010010
+#define INST_READ_RX_BUFFER_RXB1SIDH         0b10010100
+#define INST_READ_RX_BUFFER_RXB1D0           0b10010110
 #define INST_WRITE                           0b00000010
-#define INST_WRITE_TX_BUFFER_base            0b01000000
-//#define INST_RTS                             0b10000nnn
+#define INST_WRITE_TX_BUFFER_TXB0SIDH        0b01000000
+#define INST_WRITE_TX_BUFFER_TXB0D0          0b01000001
+#define INST_WRITE_TX_BUFFER_TXB1SIDH        0b01000010
+#define INST_WRITE_TX_BUFFER_TXB1D0          0b01000011
+#define INST_WRITE_TX_BUFFER_TXB2SIDH        0b01000100
+#define INST_WRITE_TX_BUFFER_TXB2D0          0b01000101
+#define INST_RTS_TXB0                        0b10000001
+#define INST_RTS_TXB1                        0b10000010
+#define INST_RTS_TXB2                        0b10000100
 #define INST_READ_STATUS                     0b10100000
 #define INST_READ_RX_STATUS                  0b10110000
 #define INST_WRITE_BITS                      0b00000101
@@ -227,26 +237,30 @@
 #define REG_RXBnSIDL_IDE                     0b00001000
 
 #define REG_RXBnDLC_RTR                      0b01000000
+#define REG_RXBnDLC_DLC_mask                 0b00001111
+#define REG_RXBnDLC_DLC_offset               0
 
 #define BUFFER_COUNT 8
 #define BUFFER_LENGTH 13
 
+#define STATUS_FRAME_READ_CALLBACK_ENABLED   0b00000001
+#define STATUS_ENTERING_CONFIG_MODE          0b00000010
+#define STATUS_LEAVING_CONFIG_MODE           0b00000100
+
 typedef struct {
+	uint8_t status;
+
 	uint8_t txb[BUFFER_COUNT][BUFFER_LENGTH];
 	uint8_t txb_start;
 	uint8_t txb_end;
+	uint8_t txb0_header[5];
 
 	uint8_t rxb[BUFFER_COUNT][BUFFER_LENGTH];
 	uint8_t rxb_start;
 	uint8_t rxb_end;
 
-	bool read_callback_enabled;
-
 	uint32_t read_register_overflows;
 	uint32_t read_buffer_overflows;
-
-	bool entering_config_mode;
-	bool leaving_config_mode;
 
 	uint8_t baud_rate;
 	uint8_t transceiver_mode;
@@ -257,8 +271,6 @@ typedef struct {
 	uint32_t filter_mask;
 	uint32_t filter1;
 	uint32_t filter2;
-	
-	uint32_t tick;
 } BrickContext;
 
 #endif

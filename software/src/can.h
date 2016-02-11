@@ -141,12 +141,15 @@ void mcp2515_instruction(const uint8_t inst, const uint8_t *req, const uint8_t r
 void mcp2515_reset(void);
 uint8_t mcp2515_read_register(const uint8_t reg);
 void mcp2515_read_registers(const uint8_t reg, uint8_t *data, const uint8_t length);
+void mcp2515_read_rxb0(uint8_t *rxb);
+void mcp2515_clear_rxb0(void);
 void mcp2515_write_register(const uint8_t reg, const uint8_t data);
 void mcp2515_write_registers(const uint8_t reg, const uint8_t *data, const uint8_t length);
-void mcp2515_write_tx_buffer(const uint8_t index, const uint8_t *data, const uint8_t length);
+void mcp2515_write_txb0(const uint8_t *txb);
 uint8_t mcp2515_read_status(void);
 uint8_t mcp2515_read_rx_status(void);
 void mcp2515_write_bits(const uint8_t reg, const uint8_t mask, const uint8_t data);
+void mcp2515_rts_txb0(void);
 
 bool txb_enqueue(const Frame *frame);
 bool rxb_dequeue(Frame *frame);
