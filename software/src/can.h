@@ -33,7 +33,8 @@
 #define FID_IS_FRAME_READ_CALLBACK_ENABLED 5
 #define FID_SET_CONFIGURATION 6
 #define FID_GET_CONFIGURATION 7
-#define FID_FRAME_READ 8
+#define FID_GET_ERROR_LOG 8
+#define FID_FRAME_READ 9
 
 #define BAUD_RATE_10000 0
 #define BAUD_RATE_20000 1
@@ -91,6 +92,23 @@ typedef struct {
 
 typedef struct {
 	MessageHeader header;
+} __attribute__((__packed__)) EnableFrameReadCallback;
+
+typedef struct {
+	MessageHeader header;
+} __attribute__((__packed__)) DisableFrameReadCallback;
+
+typedef struct {
+	MessageHeader header;
+} __attribute__((__packed__)) IsFrameReadCallbackEnabled;
+
+typedef struct {
+	MessageHeader header;
+	bool enabled;
+} __attribute__((__packed__)) IsFrameReadCallbackEnabledReturn;
+
+typedef struct {
+	MessageHeader header;
 	uint8_t baud_rate;
 	uint8_t transceiver_mode;
 	int32_t write_timeout;
@@ -109,20 +127,17 @@ typedef struct {
 
 typedef struct {
 	MessageHeader header;
-} __attribute__((__packed__)) EnableFrameReadCallback;
+} __attribute__((__packed__)) GetErrorLog;
 
 typedef struct {
 	MessageHeader header;
-} __attribute__((__packed__)) DisableFrameReadCallback;
-
-typedef struct {
-	MessageHeader header;
-} __attribute__((__packed__)) IsFrameReadCallbackEnabled;
-
-typedef struct {
-	MessageHeader header;
-	bool enabled;
-} __attribute__((__packed__)) IsFrameReadCallbackEnabledReturn;
+	bool transceiver_disabled;
+	uint8_t write_error_level;
+	uint8_t read_error_level;
+	uint32_t write_timeout_count;
+	uint32_t read_register_overflow_count;
+	uint32_t read_buffer_overflow_count;
+} __attribute__((__packed__)) GetErrorLogReturn;
 
 typedef struct {
 	MessageHeader header;
@@ -163,5 +178,7 @@ void is_frame_read_callback_enabled(const ComType com, const IsFrameReadCallback
 
 void set_configuration(const ComType com, const SetConfiguration *data);
 void get_configuration(const ComType com, const GetConfiguration *data);
+
+void get_error_log(const ComType com, const GetErrorLog *data);
 
 #endif

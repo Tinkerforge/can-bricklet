@@ -259,8 +259,9 @@ typedef struct {
 	uint8_t rxb_start;
 	uint8_t rxb_end;
 
-	uint32_t read_register_overflows;
-	uint32_t read_buffer_overflows;
+	uint32_t write_timeout_count;
+	uint32_t read_register_overflow_count;
+	uint32_t read_buffer_overflow_count;
 
 	uint8_t baud_rate;
 	uint8_t transceiver_mode;
@@ -271,6 +272,6 @@ typedef struct {
 	uint32_t filter_mask;
 	uint32_t filter1;
 	uint32_t filter2;
-} BrickContext;
+} __attribute__((__packed__)) BrickContext;
 
 #endif

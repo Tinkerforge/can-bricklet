@@ -123,8 +123,9 @@ void constructor(void) {
 	BC->rxb_start = 0;
 	BC->rxb_end = 0;
 
-	BC->read_register_overflows = 0;
-	BC->read_buffer_overflows = 0;
+	BC->write_timeout_count = 0;
+	BC->read_register_overflow_count = 0;
+	BC->read_buffer_overflow_count = 0;
 
 	BC->baud_rate = BAUD_RATE_125000;
 	BC->transceiver_mode = TRANSCEIVER_MODE_NORMAL;
@@ -185,6 +186,7 @@ void invocation(const ComType com, const uint8_t *data) {
 		case FID_IS_FRAME_READ_CALLBACK_ENABLED: is_frame_read_callback_enabled(com, (IsFrameReadCallbackEnabled*)data); break;
 		case FID_SET_CONFIGURATION:              set_configuration(com, (SetConfiguration *)data); break;
 		case FID_GET_CONFIGURATION:              get_configuration(com, (GetConfiguration *)data); break;
+		case FID_GET_ERROR_LOG:                  get_error_log(com, (GetErrorLog *)data); break;
 		default:                                 BA->com_return_error(data, sizeof(MessageHeader), MESSAGE_ERROR_CODE_NOT_SUPPORTED, com); break;
 	}
 }
@@ -262,7 +264,7 @@ void tick(const uint8_t tick_type) {
 				if ((eflg & REG_EFLG_RX0OVR) != 0) {
 					BA->printf("R0 regovr\n\r");
 
-					BC->read_register_overflows++;
+					BC->read_register_overflow_count++;
 
 					mcp2515_write_bits(REG_EFLG, REG_EFLG_RX0OVR, 0); // 4 bytes
 					//mcp2515_write_register(REG_EFLG, 0); // 3 bytes
@@ -275,7 +277,7 @@ void tick(const uint8_t tick_type) {
 					mcp2515_read_rxb0(rxb); // 6-14 bytes
 				} else {
 					BA->printf("R0 bufovr\n\r");
-					BC->read_buffer_overflows++;
+					BC->read_buffer_overflow_count++;
 
 					mcp2515_clear_rxb0(); // 1 bytes
 				}
@@ -625,4 +627,25 @@ void get_configuration(const ComType com, const GetConfiguration *data) {
 	gcr.write_timeout    = BC->write_timeout;
 
 	BA->send_blocking_with_timeout(&gcr, sizeof(gcr), com);
+}
+
+void get_error_log(const ComType com, const GetErrorLog *data) {
+	GetErrorLogReturn gelr;
+
+	gelr.header                       = data->header;
+	gelr.header.length                = sizeof(gelr);
+
+	const uint8_t eflg = mcp2515_read_register(REG_EFLG); // 3 bytes
+	uint8_t tec_rec[2];
+
+	mcp2515_read_registers(REG_TEC, tec_rec, 2); // 4 bytes
+
+	gelr.transceiver_disabled         = (eflg & REG_EFLG_TXBO) != 0;
+	gelr.write_error_level            = tec_rec[0];
+	gelr.read_error_level             = tec_rec[1];
+	gelr.write_timeout_count          = BC->write_timeout_count;
+	gelr.read_register_overflow_count = BC->read_register_overflow_count;
+	gelr.read_buffer_overflow_count   = BC->read_buffer_overflow_count;
+
+	BA->send_blocking_with_timeout(&gelr, sizeof(gelr), com);
 }
