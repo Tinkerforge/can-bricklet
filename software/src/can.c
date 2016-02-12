@@ -522,20 +522,30 @@ bool rxb_dequeue(Frame *frame) {
 	// identifier
 	frame->identifier = ((uint32_t)rxb[0] << 3) | (rxb[1] >> 5);
 
-	if (frame->frame_type == FRAME_TYPE_EXTENDED_DATA || frame->frame_type == FRAME_TYPE_EXTENDED_REMOTE) {
-		frame->identifier |= (((uint32_t)rxb[1] & 0b00000011) << 27) | ((uint32_t)rxb[2] << 19) | ((uint32_t)rxb[3] << 11);
+	if (frame->frame_type == FRAME_TYPE_EXTENDED_DATA ||
+	    frame->frame_type == FRAME_TYPE_EXTENDED_REMOTE) {
+		frame->identifier |= (((uint32_t)rxb[1] & 0b00000011) << 27) |
+		                     ((uint32_t)rxb[2] << 19) |
+		                     ((uint32_t)rxb[3] << 11);
 	}
 
 	// length
 	frame->length = (rxb[4] & REG_RXBnDLC_DLC_mask) >> REG_RXBnDLC_DLC_offset;
 
 	// data
-	for (uint8_t i = 0; i < frame->length && i < 8; ++i) {
-		frame->data[i] = rxb[5 + i];
-	}
+	if (frame->frame_type == FRAME_TYPE_STANDARD_DATA ||
+	    frame->frame_type == FRAME_TYPE_EXTENDED_DATA) {
+		for (uint8_t i = 0; i < frame->length && i < 8; ++i) {
+			frame->data[i] = rxb[5 + i];
+		}
 
-	for (uint8_t i = frame->length; i < 8; ++i) {
-		frame->data[i] = 0;
+		for (uint8_t i = frame->length; i < 8; ++i) {
+			frame->data[i] = 0;
+		}
+	} else {
+		for (uint8_t i = 0; i < 8; ++i) {
+			frame->data[i] = 0;
+		}
 	}
 
 	return true;
