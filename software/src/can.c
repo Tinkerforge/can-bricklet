@@ -161,13 +161,6 @@ void constructor(void) {
 	// Set baud rate
 	mcp2515_write_registers(REG_CNF3, baud_rate_cnf[BC->baud_rate], 3);
 
-	// Enable RXB0 to RXB1 rollover
-	//mcp2515_bit_modify(REG_RXB0CTRL, REG_RXB0CTRL_BUKT, REG_RXB0CTRL_BUKT);
-
-	// Configure filters
-	//mcp2515_bit_modify(REG_RXB1CTRL, REG_RXBnCTRL_RXM_mask, REG_RXBnCTRL_RXM_DISABLED);
-	//mcp2515_bit_modify(REG_RXB0CTRL, REG_RXBnCTRL_RXM_mask, REG_RXBnCTRL_RXM_DISABLED);
-
 	// Configure one-shot mode and switch to requested mode
 	mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask | REG_CANCTRL_OSM,
 	                   transceiver_mode_canctrl[BC->transceiver_mode] |
