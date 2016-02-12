@@ -523,7 +523,7 @@ bool rxb_dequeue(Frame *frame) {
 	frame->identifier = ((uint32_t)rxb[0] << 3) | (rxb[1] >> 5);
 
 	if (frame->frame_type == FRAME_TYPE_EXTENDED_DATA || frame->frame_type == FRAME_TYPE_EXTENDED_REMOTE) {
-		frame->identifier |= (((uint32_t)rxb[1] & 0b00000011) << 16) | ((uint32_t)rxb[2] << 8) | rxb[3];
+		frame->identifier |= (((uint32_t)rxb[1] & 0b00000011) << 27) | ((uint32_t)rxb[2] << 19) | ((uint32_t)rxb[3] << 11);
 	}
 
 	// length
