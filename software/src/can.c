@@ -220,24 +220,6 @@ void tick(const uint8_t tick_type) {
 		if ((BC->status & (STATUS_ENTERING_CONFIG_MODE | STATUS_LEAVING_CONFIG_MODE)) == 0) {
 			const uint8_t status = mcp2515_read_status(); // 2 bytes
 
-			// Write frame
-			if (BC->txb_start != BC->txb_end) {
-				BA->printf("WQ\n\r");
-
-				// FIXME: currently using TXB0 only for simplicity
-				// FIXME: add some sort of timeout handling?
-				// FIXME: read and report/deal with TXBnCTRL.MLOA or TXBnCTRL.TXERR?
-				if ((status & INST_READ_STATUS_TXB0CTRL_TXREQ) == 0) {
-					const uint8_t *txb = BC->txb[BC->txb_start];
-					BC->txb_start = (BC->txb_start + 1) % BUFFER_COUNT;
-
-					mcp2515_write_txb0(txb); // 0-14 bytes
-					mcp2515_rts_txb0(); // 1 bytes
-
-					BA->printf("W0\n\r");
-				}
-			}
-
 			// FIXME: maybe don't write and read a frame in the same tick to
 			//        avoid making the tick too long
 
@@ -289,6 +271,24 @@ void tick(const uint8_t tick_type) {
 				}
 
 				mcp2515_write_bits(REG_CANINTF, REG_CANINTF_RX1IF, 0);
+			}
+
+			// Write frame
+			if (BC->txb_start != BC->txb_end) {
+				BA->printf("WQ\n\r");
+
+				// FIXME: currently using TXB0 only for simplicity
+				// FIXME: add some sort of timeout handling?
+				// FIXME: read and report/deal with TXBnCTRL.MLOA or TXBnCTRL.TXERR?
+				if ((status & INST_READ_STATUS_TXB0CTRL_TXREQ) == 0) {
+					const uint8_t *txb = BC->txb[BC->txb_start];
+					BC->txb_start = (BC->txb_start + 1) % BUFFER_COUNT;
+
+					mcp2515_write_txb0(txb); // 0-14 bytes
+					mcp2515_rts_txb0(); // 1 bytes
+
+					BA->printf("W0\n\r");
+				}
 			}
 		}
 	}
