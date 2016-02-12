@@ -224,6 +224,8 @@
 #define REG_TXBnSIDL_EXIDE                   0b00001000
 
 #define REG_TXBnDLC_RTR                      0b01000000
+#define REG_TXBnDLC_DLC_mask                 0b00001111
+#define REG_TXBnDLC_DLC_offset               0
 
 #define REG_RXBnCTRL_RXM_mask                0b01100000
 #define REG_RXBnCTRL_RXM_DISABLED            0b01100000

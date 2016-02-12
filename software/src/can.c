@@ -408,7 +408,9 @@ void mcp2515_write_registers(const uint8_t reg, const uint8_t *data, const uint8
 }
 
 void mcp2515_write_txb0(const uint8_t *txb) {
-	const uint8_t dlc = MIN((txb[4] & REG_RXBnDLC_DLC_mask) >> REG_RXBnDLC_DLC_offset, 8);
+	const uint8_t dlc = (txb[4] & REG_TXBnDLC_RTR) == 0
+	                    ? MIN((txb[4] & REG_TXBnDLC_DLC_mask) >> REG_TXBnDLC_DLC_offset, 8)
+	                    : 0;
 
 	// FIXME: maybe also cache data segment?
 	if ((BC->status & STATUS_VALID_TXB0_HEADER) != 0 &&
