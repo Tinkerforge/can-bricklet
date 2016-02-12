@@ -116,10 +116,6 @@ void constructor(void) {
 	BC->txb_start = 0;
 	BC->txb_end = 0;
 
-	for (uint8_t i = 0; i < 5; ++i) {
-		BC->txb0_header[i] = 0;
-	}
-
 	BC->rxb_start = 0;
 	BC->rxb_end = 0;
 
@@ -415,7 +411,8 @@ void mcp2515_write_txb0(const uint8_t *txb) {
 	const uint8_t dlc = MIN((txb[4] & REG_RXBnDLC_DLC_mask) >> REG_RXBnDLC_DLC_offset, 8);
 
 	// FIXME: maybe also cache data segment?
-	if (BC->txb0_header[0] == txb[0] &&
+	if ((BC->status & STATUS_VALID_TXB0_HEADER) != 0 &&
+	    BC->txb0_header[0] == txb[0] &&
 	    BC->txb0_header[1] == txb[1] &&
 	    BC->txb0_header[2] == txb[2] &&
 	    BC->txb0_header[3] == txb[3] &&
@@ -424,6 +421,7 @@ void mcp2515_write_txb0(const uint8_t *txb) {
 			mcp2515_instruction(INST_WRITE_TX_BUFFER_TXB0D0, txb + 5, dlc, NULL, 0);
 		}
 	} else {
+		BC->status |= STATUS_VALID_TXB0_HEADER;
 		BC->txb0_header[0] = txb[0];
 		BC->txb0_header[1] = txb[1];
 		BC->txb0_header[2] = txb[2];

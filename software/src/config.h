@@ -246,6 +246,7 @@
 #define STATUS_FRAME_READ_CALLBACK_ENABLED   0b00000001
 #define STATUS_ENTERING_CONFIG_MODE          0b00000010
 #define STATUS_LEAVING_CONFIG_MODE           0b00000100
+#define STATUS_VALID_TXB0_HEADER             0b00001000
 
 typedef struct {
 	uint8_t status;
