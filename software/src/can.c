@@ -408,27 +408,28 @@ void mcp2515_write_registers(const uint8_t reg, const uint8_t *data, const uint8
 }
 
 void mcp2515_write_txb0(const uint8_t *txb) {
+	BrickContext *bc = BC;
 	const uint8_t dlc = (txb[4] & REG_TXBnDLC_RTR) == 0
 	                    ? MIN((txb[4] & REG_TXBnDLC_DLC_mask) >> REG_TXBnDLC_DLC_offset, 8)
 	                    : 0;
 
 	// FIXME: maybe also cache data segment?
-	if ((BC->status & STATUS_VALID_TXB0_HEADER) != 0 &&
-	    BC->txb0_header[0] == txb[0] &&
-	    BC->txb0_header[1] == txb[1] &&
-	    BC->txb0_header[2] == txb[2] &&
-	    BC->txb0_header[3] == txb[3] &&
-	    BC->txb0_header[4] == txb[4]) {
+	if ((bc->status & STATUS_VALID_TXB0_HEADER) != 0 &&
+	    bc->txb0_header[0] == txb[0] &&
+	    bc->txb0_header[1] == txb[1] &&
+	    bc->txb0_header[2] == txb[2] &&
+	    bc->txb0_header[3] == txb[3] &&
+	    bc->txb0_header[4] == txb[4]) {
 		if (dlc > 0) {
 			mcp2515_instruction(INST_WRITE_TX_BUFFER_TXB0D0, txb + 5, dlc, NULL, 0);
 		}
 	} else {
-		BC->status |= STATUS_VALID_TXB0_HEADER;
-		BC->txb0_header[0] = txb[0];
-		BC->txb0_header[1] = txb[1];
-		BC->txb0_header[2] = txb[2];
-		BC->txb0_header[3] = txb[3];
-		BC->txb0_header[4] = txb[4];
+		bc->status |= STATUS_VALID_TXB0_HEADER;
+		bc->txb0_header[0] = txb[0];
+		bc->txb0_header[1] = txb[1];
+		bc->txb0_header[2] = txb[2];
+		bc->txb0_header[3] = txb[3];
+		bc->txb0_header[4] = txb[4];
 
 		mcp2515_instruction(INST_WRITE_TX_BUFFER_TXB0SIDH, txb, 5 + dlc, NULL, 0);
 	}
@@ -501,12 +502,14 @@ bool txb_enqueue(const Frame *frame) {
 }
 
 bool rxb_dequeue(Frame *frame) {
-	if (BC->rxb_start == BC->rxb_end) {
+	BrickContext *bc = BC;
+
+	if (bc->rxb_start == bc->rxb_end) {
 		return false;
 	}
 
-	const uint8_t *rxb = BC->rxb[BC->rxb_start];
-	BC->rxb_start = (BC->rxb_start + 1) % BUFFER_COUNT;
+	const uint8_t *rxb = bc->rxb[bc->rxb_start];
+	bc->rxb_start = (bc->rxb_start + 1) % BUFFER_COUNT;
 
 	// frame type
 	if ((rxb[1] & REG_RXBnSIDL_IDE) == 0) {
@@ -608,35 +611,39 @@ void is_frame_read_callback_enabled(const ComType com, const IsFrameReadCallback
 }
 
 void set_configuration(const ComType com, const SetConfiguration *data) {
+	BrickContext *bc = BC;
+
 	if (data->baud_rate > BAUD_RATE_1000000 ||
 	    data->transceiver_mode > TRANSCEIVER_MODE_READ_ONLY) {
 		BA->com_return_error(data, sizeof(MessageHeader), MESSAGE_ERROR_CODE_INVALID_PARAMETER, com);
 		return;
 	}
 
-	BC->baud_rate        = data->baud_rate;
-	BC->transceiver_mode = data->transceiver_mode;
-	BC->write_timeout    = MAX(data->write_timeout, -1);
+	bc->baud_rate        = data->baud_rate;
+	bc->transceiver_mode = data->transceiver_mode;
+	bc->write_timeout    = MAX(data->write_timeout, -1);
 
-	BC->status |= STATUS_ENTERING_CONFIG_MODE;
-	BC->status &= ~STATUS_LEAVING_CONFIG_MODE;
+	bc->status |= STATUS_ENTERING_CONFIG_MODE;
+	bc->status &= ~STATUS_LEAVING_CONFIG_MODE;
 
 	BA->com_return_setter(com, data);
 }
 
 void get_configuration(const ComType com, const GetConfiguration *data) {
+	const BrickContext *bc = BC;
 	GetConfigurationReturn gcr;
 
 	gcr.header           = data->header;
 	gcr.header.length    = sizeof(gcr);
-	gcr.baud_rate        = BC->baud_rate;
-	gcr.transceiver_mode = BC->transceiver_mode;
-	gcr.write_timeout    = BC->write_timeout;
+	gcr.baud_rate        = bc->baud_rate;
+	gcr.transceiver_mode = bc->transceiver_mode;
+	gcr.write_timeout    = bc->write_timeout;
 
 	BA->send_blocking_with_timeout(&gcr, sizeof(gcr), com);
 }
 
 void get_error_log(const ComType com, const GetErrorLog *data) {
+	const BrickContext *bc = BC;
 	GetErrorLogReturn gelr;
 
 	gelr.header                       = data->header;
@@ -650,9 +657,9 @@ void get_error_log(const ComType com, const GetErrorLog *data) {
 	gelr.transceiver_disabled         = (eflg & REG_EFLG_TXBO) != 0;
 	gelr.write_error_level            = tec_rec[0];
 	gelr.read_error_level             = tec_rec[1];
-	gelr.write_timeout_count          = BC->write_timeout_count;
-	gelr.read_register_overflow_count = BC->read_register_overflow_count;
-	gelr.read_buffer_overflow_count   = BC->read_buffer_overflow_count;
+	gelr.write_timeout_count          = bc->write_timeout_count;
+	gelr.read_register_overflow_count = bc->read_register_overflow_count;
+	gelr.read_buffer_overflow_count   = bc->read_buffer_overflow_count;
 
 	BA->send_blocking_with_timeout(&gelr, sizeof(gelr), com);
 }
