@@ -88,7 +88,7 @@
 #define REG_TEC                              0x1C
 #define REG_REC                              0x1D
 #define REG_CNF3                             0x28
-#define REG_CNF2                             0x28
+#define REG_CNF2                             0x29
 #define REG_CNF1                             0x2A
 #define REG_CANINTE                          0x2B
 #define REG_CANINTF                          0x2C
