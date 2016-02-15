@@ -251,20 +251,21 @@
 #define STATUS_VALID_TXB0_HEADER             0b00001000
 
 typedef struct {
-	uint8_t status;
-
-	uint8_t txb[BUFFER_COUNT][BUFFER_LENGTH];
-	uint8_t txb_start;
-	uint8_t txb_end;
-	uint8_t txb0_header[5];
-
-	uint8_t rxb[BUFFER_COUNT][BUFFER_LENGTH];
-	uint8_t rxb_start;
-	uint8_t rxb_end;
-
 	uint32_t write_timeout_count;
 	uint32_t read_register_overflow_count;
 	uint32_t read_buffer_overflow_count;
+
+	uint32_t filter_mask;
+	uint32_t filter1;
+	uint32_t filter2;
+
+	uint8_t status;
+
+	uint8_t txb_start;
+	uint8_t txb_end;
+
+	uint8_t rxb_start;
+	uint8_t rxb_end;
 
 	uint8_t baud_rate;
 	uint8_t transceiver_mode;
@@ -272,9 +273,10 @@ typedef struct {
 	int32_t write_timeout_counter;
 
 	uint8_t filter_mode;
-	uint32_t filter_mask;
-	uint32_t filter1;
-	uint32_t filter2;
-} __attribute__((__packed__)) BrickContext;
+
+	uint8_t txb[BUFFER_COUNT][BUFFER_LENGTH];
+	uint8_t rxb[BUFFER_COUNT][BUFFER_LENGTH];
+	uint8_t txb0_header[5];
+} BrickContext;
 
 #endif
