@@ -612,7 +612,7 @@ void set_configuration(const ComType com, const SetConfiguration *data) {
 
 	BC->baud_rate        = data->baud_rate;
 	BC->transceiver_mode = data->transceiver_mode;
-	BC->write_timeout    = data->write_timeout;
+	BC->write_timeout    = MAX(data->write_timeout, -1);
 
 	BC->status |= STATUS_ENTERING_CONFIG_MODE;
 	BC->status &= ~STATUS_LEAVING_CONFIG_MODE;
