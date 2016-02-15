@@ -489,7 +489,7 @@ bool txb_enqueue(const Frame *frame) {
 	         frame->length;
 
 	// TXBnDm
-	for (uint8_t i = 0; frame->length && i < 8; ++i) {
+	for (uint8_t i = 0; i < frame->length && i < 8; ++i) {
 		txb[5 + i] = frame->data[i];
 	}
 
