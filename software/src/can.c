@@ -472,21 +472,25 @@ bool txb_enqueue(const Frame *frame) {
 	txb[0] = (frame->identifier >> 3) & 0xFF;
 
 	// TXBnSIDL
+	const bool extended = frame->frame_type == FRAME_TYPE_EXTENDED_DATA ||
+	                      frame->frame_type == FRAME_TYPE_EXTENDED_REMOTE;
+
 	txb[1] = ((frame->identifier & 0b00000111) << 5) |
-	         (frame->frame_type == FRAME_TYPE_EXTENDED_DATA ||
-	          frame->frame_type == FRAME_TYPE_EXTENDED_REMOTE ? REG_TXBnSIDL_EXIDE : 0) |
-	         ((frame->identifier >> 27) & 0b00000011);
+	         (extended ? REG_TXBnSIDL_EXIDE : 0) |
+	         (extended ? (frame->identifier >> 27) & 0b00000011 : 0);
 
 	// TXBnEID8
-	txb[2] = (frame->identifier >> 19) & 0xFF;
+	txb[2] = extended ? (frame->identifier >> 19) & 0xFF : 0;
 
 	// TXBnEID0
-	txb[3] = (frame->identifier >> 11) & 0xFF;
+	txb[3] = extended ? (frame->identifier >> 11) & 0xFF : 0;
 
 	// TXBnDLC
-	txb[4] = (frame->frame_type == FRAME_TYPE_STANDARD_REMOTE ||
-	          frame->frame_type == FRAME_TYPE_EXTENDED_REMOTE ? REG_TXBnDLC_RTR : 0) |
-	         frame->length;
+	const bool remote = frame->frame_type == FRAME_TYPE_STANDARD_REMOTE ||
+	                    frame->frame_type == FRAME_TYPE_EXTENDED_REMOTE;
+
+	txb[4] = (remote ? REG_TXBnDLC_RTR : 0) |
+	         ((frame->length << REG_TXBnDLC_DLC_offset) & REG_TXBnDLC_DLC_mask);
 
 	// TXBnDm
 	for (uint8_t i = 0; i < frame->length && i < 8; ++i) {
