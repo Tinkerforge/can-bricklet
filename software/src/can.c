@@ -111,26 +111,29 @@ void constructor(void) {
 	_Static_assert(sizeof(BrickContext) <= BRICKLET_CONTEXT_MAX_SIZE,
 	               "BrickContext too big");
 
-	BC->status = 0;
+	BrickContext *bc = BC;
 
-	BC->txb_start = 0;
-	BC->txb_end = 0;
+	bc->status = 0;
 
-	BC->rxb_start = 0;
-	BC->rxb_end = 0;
+	bc->txb_start = 0;
+	bc->txb_end = 0;
 
-	BC->write_timeout_count = 0;
-	BC->read_register_overflow_count = 0;
-	BC->read_buffer_overflow_count = 0;
+	bc->rxb_start = 0;
+	bc->rxb_end = 0;
 
-	BC->baud_rate = BAUD_RATE_125000;
-	BC->transceiver_mode = TRANSCEIVER_MODE_NORMAL;
-	BC->write_timeout = 0;
+	bc->write_timeout_count = 0;
+	bc->read_register_overflow_count = 0;
+	bc->read_buffer_overflow_count = 0;
 
-	BC->filter_mode = FILTER_MODE_DISABLED;
-	BC->filter_mask = 0;
-	BC->filter1 = 0;
-	BC->filter2 = 0;
+	bc->baud_rate = BAUD_RATE_125000;
+	bc->transceiver_mode = TRANSCEIVER_MODE_NORMAL;
+	bc->write_timeout = 0;
+	bc->write_timeout_counter = 0;
+
+	bc->filter_mode = FILTER_MODE_ACCEPT_ALL;
+	bc->filter_mask = 0;
+	bc->filter1 = 0;
+	bc->filter2 = 0;
 
 	// Pins
 	SPI_CS.type = PIO_OUTPUT_1;
@@ -149,18 +152,29 @@ void constructor(void) {
 	SPI_SDO.attribute = PIO_DEFAULT;
 	BA->PIO_Configure(&SPI_SDO, 1);
 
-	// Reset
 	SLEEP_MS(2);
 	mcp2515_reset(); // Enters config mode
 	SLEEP_US(200);
 
-	// Set baud rate
-	mcp2515_write_registers(REG_CNF3, baud_rate_cnf[BC->baud_rate], 3);
+	apply_config();
 
-	// Configure one-shot mode and switch to requested mode
-	mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask | REG_CANCTRL_OSM,
-	                   transceiver_mode_canctrl[BC->transceiver_mode] |
-	                   (BC->write_timeout < 0 ? REG_CANCTRL_OSM : 0));
+	/*
+	F0 10
+	F1 104
+	F2 96
+	F3 160
+	F4 64
+	F5 0
+	*/
+
+#if 0
+	BA->printf("F0 %d\n\r", mcp2515_read_register(REG_RXF0SIDL));
+	BA->printf("F1 %d\n\r", mcp2515_read_register(REG_RXF1SIDL));
+	BA->printf("F2 %d\n\r", mcp2515_read_register(REG_RXF2SIDL));
+	BA->printf("F3 %d\n\r", mcp2515_read_register(REG_RXF3SIDL));
+	BA->printf("F4 %d\n\r", mcp2515_read_register(REG_RXF4SIDL));
+	BA->printf("F5 %d\n\r", mcp2515_read_register(REG_RXF5SIDL));
+#endif
 }
 
 void destructor(void) {
@@ -175,48 +189,46 @@ void invocation(const ComType com, const uint8_t *data) {
 		case FID_IS_FRAME_READ_CALLBACK_ENABLED: is_frame_read_callback_enabled(com, (IsFrameReadCallbackEnabled*)data); break;
 		case FID_SET_CONFIGURATION:              set_configuration(com, (SetConfiguration *)data); break;
 		case FID_GET_CONFIGURATION:              get_configuration(com, (GetConfiguration *)data); break;
+		case FID_SET_READ_FILTER:                set_read_filter(com, (SetReadFilter *)data); break;
+		case FID_GET_READ_FILTER:                get_read_filter(com, (GetReadFilter *)data); break;
 		case FID_GET_ERROR_LOG:                  get_error_log(com, (GetErrorLog *)data); break;
 		default:                                 BA->com_return_error(data, sizeof(MessageHeader), MESSAGE_ERROR_CODE_NOT_SUPPORTED, com); break;
 	}
 }
 
 void tick(const uint8_t tick_type) {
-	if (tick_type & TICK_TASK_TYPE_CALCULATION) {
-		if ((BC->status & STATUS_ENTERING_CONFIG_MODE) != 0) {
-			BA->printf("EC\n\r");
+	BrickContext *bc = BC;
+	const BrickletAPI *ba = BA;
 
+	if (tick_type & TICK_TASK_TYPE_CALCULATION) {
+		if ((bc->status & STATUS_ENTERING_CONFIG_MODE) != 0) {
 			mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask, REG_CANCTRL_REQOP_CONFIG); // 4 bytes
 
 			const uint8_t canstat = mcp2515_read_register(REG_CANSTAT); // 3 bytes
 
 			if ((canstat & REG_CANSTAT_OPMOD_mask) == REG_CANSTAT_OPMOD_CONFIG) {
-				mcp2515_write_registers(REG_CNF3, baud_rate_cnf[BC->baud_rate], 3); // 5 bytes
-				mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask | REG_CANCTRL_OSM,
-				                   transceiver_mode_canctrl[BC->transceiver_mode] |
-				                   (BC->write_timeout < 0 ? REG_CANCTRL_OSM : 0)); // 4 bytes
+				apply_config();
 
-				BC->status &= ~STATUS_ENTERING_CONFIG_MODE;
-				BC->status |= STATUS_LEAVING_CONFIG_MODE;
+				bc->status &= ~STATUS_ENTERING_CONFIG_MODE;
+				bc->status |= STATUS_LEAVING_CONFIG_MODE;
 			}
 		}
 
-		if ((BC->status & STATUS_LEAVING_CONFIG_MODE) != 0) {
-			BA->printf("LC\n\r");
-
+		if ((bc->status & STATUS_LEAVING_CONFIG_MODE) != 0) {
 			mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask,
-			                   transceiver_mode_canctrl[BC->transceiver_mode]); // 4 bytes
+			                   transceiver_mode_canctrl[bc->transceiver_mode]); // 4 bytes
 
 			const uint8_t canstat = mcp2515_read_register(REG_CANSTAT); // 3 bytes
 
-			if ((canstat & REG_CANSTAT_OPMOD_mask) == transceiver_mode_canctrl[BC->transceiver_mode]) {
-				BC->status &= ~STATUS_LEAVING_CONFIG_MODE;
+			if ((canstat & REG_CANSTAT_OPMOD_mask) == transceiver_mode_canctrl[bc->transceiver_mode]) {
+				bc->status &= ~STATUS_LEAVING_CONFIG_MODE;
 			}
 		}
 
-		if ((BC->status & (STATUS_ENTERING_CONFIG_MODE | STATUS_LEAVING_CONFIG_MODE)) == 0) {
+		if ((bc->status & (STATUS_ENTERING_CONFIG_MODE | STATUS_LEAVING_CONFIG_MODE)) == 0) {
 			const uint8_t status = mcp2515_read_status(); // 2 bytes
 
-			// FIXME: maybe don't write and read a frame in the same tick to
+			// FIXME: maybe don't read and write a frame in the same tick to
 			//        avoid making the tick too long
 
 			// Read frame from RXB0. There is no point in using RXB1 in
@@ -226,81 +238,107 @@ void tick(const uint8_t tick_type) {
 			// the data in correct order from RXB0 and RXB1 is really tricky
 			// and full of race conditions. I've tried to come up with an
 			// algorithm for this, but have failed. For now I keep it simple
-			// and just completely ignore RXB1.
+			// and just completely ignore RXB1. Also there is not enough time
+			// per tick to read more than one RXB per tick over SPI at 400 kHz.
 			if ((status & INST_READ_STATUS_CANINTF_RX0IF) != 0) {
-				BA->printf("R0\n\r");
-
 				const uint8_t eflg = mcp2515_read_register(REG_EFLG); // 3 bytes
 
 				if ((eflg & REG_EFLG_RX0OVR) != 0) {
-					BA->printf("R0 regovr\n\r");
+					bc->read_register_overflow_count++;
 
-					BC->read_register_overflow_count++;
-
-					mcp2515_write_bits(REG_EFLG, REG_EFLG_RX0OVR, 0); // 4 bytes
-					//mcp2515_write_register(REG_EFLG, 0); // 3 bytes
+					mcp2515_write_register(REG_EFLG, 0); // 3 bytes
 				}
 
-				if ((BC->rxb_end + 1) % BUFFER_COUNT != BC->rxb_start) {
-					uint8_t *rxb = BC->rxb[BC->rxb_end];
-					BC->rxb_end = (BC->rxb_end + 1) % BUFFER_COUNT;
+				if ((bc->rxb_end + 1) % BUFFER_COUNT != bc->rxb_start) {
+					uint8_t *rxb = bc->rxb[bc->rxb_end];
+					bc->rxb_end = (bc->rxb_end + 1) % BUFFER_COUNT;
 
 					mcp2515_read_rxb0(rxb); // 6-14 bytes
 				} else {
-					BA->printf("R0 bufovr\n\r");
-					BC->read_buffer_overflow_count++;
+					bc->read_buffer_overflow_count++;
 
 					mcp2515_clear_rxb0(); // 1 bytes
 				}
 			}
 
+#if 0
 			// FIXME: this block is just for debugging
 			if ((status & INST_READ_STATUS_CANINTF_RX1IF) != 0) {
-				BA->printf("R1 ignore\n\r");
-
-				const uint8_t eflg = mcp2515_read_register(REG_EFLG);
-
-				if ((eflg & REG_EFLG_RX1OVR) != 0) {
-					BA->printf("R1 regovr\n\r");
-
-					mcp2515_write_bits(REG_EFLG, REG_EFLG_RX1OVR, 0);
-				}
-
+				ba->printf("R1 ign\n\r");
 				mcp2515_write_bits(REG_CANINTF, REG_CANINTF_RX1IF, 0);
 			}
+#endif
 
-			// Write frame
-			if (BC->txb_start != BC->txb_end) {
-				BA->printf("WQ\n\r");
+			// Handle write timeout
+			if (bc->write_timeout_counter > 0) {
+				bc->write_timeout_counter--;
 
-				// FIXME: currently using TXB0 only for simplicity
-				// FIXME: add some sort of timeout handling?
-				// FIXME: read and report/deal with TXBnCTRL.MLOA or TXBnCTRL.TXERR?
-				if ((status & INST_READ_STATUS_TXB0CTRL_TXREQ) == 0) {
-					const uint8_t *txb = BC->txb[BC->txb_start];
-					BC->txb_start = (BC->txb_start + 1) % BUFFER_COUNT;
+				if (bc->write_timeout_counter == 0 &&
+				    (status & INST_READ_STATUS_TXB0CTRL_TXREQ) != 0) {
+					mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_ABAT, REG_CANCTRL_ABAT); // 4 bytes
+
+					bc->status |= STATUS_WRITE_ABORTED;
+					bc->write_timeout_count++;
+				}
+			}
+
+			if ((status & INST_READ_STATUS_TXB0CTRL_TXREQ) == 0) {
+				if ((bc->status & STATUS_WRITE_ABORTED) != 0) {
+					mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_ABAT, 0); // 4 bytes
+
+					bc->status &= ~STATUS_WRITE_ABORTED;
+				}
+
+				if ((bc->status & STATUS_WRITE_PENDING) != 0) {
+					if (bc->write_timeout < 0) {
+						const uint8_t txb0ctrl = mcp2515_read_register(REG_TXB0CTRL);
+
+						if ((txb0ctrl & REG_TXBnCTRL_ABTF) != 0) {
+							bc->write_timeout_count++;
+						}
+					}
+
+					bc->status &= ~STATUS_WRITE_PENDING;
+				}
+
+				// Write frame to TXB0. Currently TXB1 and TXB2 are not used
+				// because the required priority management to ensure that all
+				// frames are transmitted eventually is complex. Ensuring that
+				// frames are send in the requested order within the specified
+				// timeout is even more complex. Also a standard data frame is
+				// 44 + 8N + 3 bits long for N data bytes. This means that for
+				// a full standard data frame 111 bits have to be transmitted.
+				// At 125 kbit/s this takes 888 µs. Therefore, using more than
+				// one TXB at 125 kbit/s or slower would not increase the
+				// throughput significantly at all. Also the user program can
+				// send at most 1000 frames per second. Therefore, using more
+				// than one TXB would not result in a significant increase in
+				// throughput even at higher baud rates than 125 kbit/s, as
+				// there are only 1000 frames per second to be transmitted.
+				if (bc->txb_start != bc->txb_end) {
+					const uint8_t *txb = bc->txb[bc->txb_start];
+					bc->txb_start = (bc->txb_start + 1) % BUFFER_COUNT;
 
 					mcp2515_write_txb0(txb); // 0-14 bytes
 					mcp2515_rts_txb0(); // 1 bytes
 
-					BA->printf("W0\n\r");
+					bc->status |= STATUS_WRITE_PENDING;
+					bc->write_timeout_counter = bc->write_timeout;
 				}
 			}
 		}
 	}
 
 	if (tick_type & TICK_TASK_TYPE_MESSAGE) {
-		if ((BC->status & STATUS_FRAME_READ_CALLBACK_ENABLED) != 0 &&
-		    BC->rxb_start != BC->rxb_end) {
-			BA->printf("FRC\n\r");
-
+		if ((bc->status & STATUS_FRAME_READ_CALLBACK_ENABLED) != 0 &&
+		    bc->rxb_start != bc->rxb_end) {
 			FrameRead fr;
 
-			BA->com_make_default_header(&fr, BS->uid, sizeof(fr), FID_FRAME_READ);
+			ba->com_make_default_header(&fr, BS->uid, sizeof(fr), FID_FRAME_READ);
 
 			rxb_dequeue(&fr.frame);
 
-			BA->send_blocking_with_timeout(&fr, sizeof(fr), *BA->com_current);
+			ba->send_blocking_with_timeout(&fr, sizeof(fr), *ba->com_current);
 		}
 	}
 }
@@ -461,30 +499,116 @@ void mcp2515_rts_txb0(void) {
 	mcp2515_instruction(INST_RTS_TXB0, NULL, 0, NULL, 0);
 }
 
+void apply_config(void) {
+	const BrickContext *bc = BC;
+
+	// Set baud rate
+	mcp2515_write_registers(REG_CNF3, baud_rate_cnf[bc->baud_rate], 3); // 5 bytes
+
+	// Configure filter
+	uint8_t mode = REG_RXBnCTRL_RXM_BOTH;
+	bool extended = false;
+	uint8_t extended_bit = 0;
+
+	uint8_t mask[4] = {
+		0, 0, 0, 0
+	};
+
+	uint8_t filters[8] = {
+		0, 0, 0, 0,
+		0, REG_RXFnSIDL_EXIDE, 0, 0,
+	};
+
+	if (bc->filter_mode == FILTER_MODE_DISABLED) {
+		mode = REG_RXBnCTRL_RXM_DISABLED;
+	} else if (bc->filter_mode == FILTER_MODE_ACCEPT_ALL) {
+		// There is one important aspect to the filter configuration that
+		// is not explained well in the MCP2515 datasheet.
+		//
+		// After reset RXBnCTRL.RXM is set to 00 ("Receive all valid
+		// messages using either standard or extended identifiers that meet
+		// filter criteria.") and RXMnSIDH to RXMnEID0 is set to all zero.
+		// So all masks are zero. This implied to me that all vaild standard
+		// and extended messages should be accepted.
+		//
+		// But this is not the case. In reality the RXFnSIDL.EXIDE bit
+		// defines if a standard or extended message is accepted even if
+		// the mask is all zero. But all the RXFnSIDL registers have
+		// undefined values after reset. This measn that it is undefined
+		// whether or not a particular filter will accept standard or
+		// extended message.
+		//
+		// To create a true accept-all mode the filter have to be configured
+		// in a way that there is a filter with the RXFnSIDL.EXIDE bit set
+		// and aother filter with the RXFnSIDL.EXIDE cleared for each RXB.
+		mode = REG_RXBnCTRL_RXM_BOTH;
+	} else if (bc->filter_mode == FILTER_MODE_MATCH_STANDARD) {
+		mode = REG_RXBnCTRL_RXM_STANDARD_ONLY;
+	} else if (bc->filter_mode == FILTER_MODE_MATCH_STANDARD_AND_DATA) {
+		mode = REG_RXBnCTRL_RXM_BOTH;
+		extended = true;
+	} else if (bc->filter_mode == FILTER_MODE_MATCH_EXTENDED) {
+		mode = REG_RXBnCTRL_RXM_EXTENDED_ONLY;
+		extended_bit = REG_RXFnSIDL_EXIDE;
+	}
+
+	if (bc->filter_mode != FILTER_MODE_ACCEPT_ALL) {
+		compose_identifier(mask, bc->filter_mask, extended, 0);
+
+		compose_identifier(filters, bc->filter1, extended, extended_bit);
+		compose_identifier(filters + 4, bc->filter2, extended, extended_bit);
+	}
+
+	mcp2515_write_registers(REG_RXM0SIDH, mask, 4); // 6 bytes
+	mcp2515_write_registers(REG_RXM1SIDH, mask, 4); // 6 bytes
+
+	mcp2515_write_registers(REG_RXF0SIDH, filters, 4); // 10 bytes
+	mcp2515_write_registers(REG_RXF1SIDH, filters + 4, 4); // 10 bytes
+	mcp2515_write_registers(REG_RXF2SIDH, filters, 4); // 10 bytes
+	mcp2515_write_registers(REG_RXF3SIDH, filters + 4, 4); // 10 bytes
+	mcp2515_write_registers(REG_RXF4SIDH, filters, 4); // 10 bytes
+	mcp2515_write_registers(REG_RXF5SIDH, filters + 4, 4); // 10 bytes
+
+	mcp2515_write_bits(REG_RXB0CTRL, REG_RXBnCTRL_RXM_mask, mode); // 4 bytes
+	mcp2515_write_bits(REG_RXB1CTRL, REG_RXBnCTRL_RXM_mask, mode); // 4 bytes
+
+	// Configure one-shot mode and switch to requested transceiver mode
+	mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask | REG_CANCTRL_OSM,
+	                   transceiver_mode_canctrl[bc->transceiver_mode] |
+	                   (bc->write_timeout < 0 ? REG_CANCTRL_OSM : 0)); // 4 bytes
+}
+
+void compose_identifier(uint8_t *buffer, const uint32_t identifier,
+                        const bool extended, const uint8_t extended_bit) {
+	// SIDH
+	buffer[0] = (identifier >> 3) & 0xFF;
+
+	// SIDL
+	buffer[1] = ((identifier & 0b00000111) << 5) | extended_bit |
+	            (extended ? (identifier >> 27) & 0b00000011 : 0);
+
+	// EID8
+	buffer[2] = extended ? (identifier >> 19) & 0xFF : 0;
+
+	// EID0
+	buffer[3] = extended ? (identifier >> 11) & 0xFF : 0;
+}
+
 bool txb_enqueue(const Frame *frame) {
-	if ((BC->txb_end + 1) % BUFFER_COUNT == BC->txb_start) {
+	BrickContext *bc = BC;
+
+	if ((bc->txb_end + 1) % BUFFER_COUNT == bc->txb_start) {
 		return false;
 	}
 
-	uint8_t *txb = BC->txb[BC->txb_end];
-	BC->txb_end = (BC->txb_end + 1) % BUFFER_COUNT;
+	uint8_t *txb = bc->txb[bc->txb_end];
+	bc->txb_end = (bc->txb_end + 1) % BUFFER_COUNT;
 
-	// TXBnSIDH
-	txb[0] = (frame->identifier >> 3) & 0xFF;
-
-	// TXBnSIDL
+	// TXBnSIDH to TXBnEID0
 	const bool extended = frame->frame_type == FRAME_TYPE_EXTENDED_DATA ||
 	                      frame->frame_type == FRAME_TYPE_EXTENDED_REMOTE;
 
-	txb[1] = ((frame->identifier & 0b00000111) << 5) |
-	         (extended ? REG_TXBnSIDL_EXIDE : 0) |
-	         (extended ? (frame->identifier >> 27) & 0b00000011 : 0);
-
-	// TXBnEID8
-	txb[2] = extended ? (frame->identifier >> 19) & 0xFF : 0;
-
-	// TXBnEID0
-	txb[3] = extended ? (frame->identifier >> 11) & 0xFF : 0;
+	compose_identifier(txb, frame->identifier, extended, extended ? REG_TXBnSIDL_EXIDE : 0);
 
 	// TXBnDLC
 	const bool remote = frame->frame_type == FRAME_TYPE_STANDARD_REMOTE ||
@@ -560,11 +684,7 @@ bool rxb_dequeue(Frame *frame) {
 
 void write_frame(const ComType com, const WriteFrame *data) {
 	if (data->frame.frame_type > FRAME_TYPE_EXTENDED_REMOTE ||
-	    ((data->frame.frame_type == FRAME_TYPE_STANDARD_DATA ||
-	      data->frame.frame_type == FRAME_TYPE_STANDARD_REMOTE) &&
-	     data->frame.identifier > 0x7FF) ||
-	    data->frame.identifier > 0x1FFFFFFF ||
-	    data->frame.length > 0b00001111) {
+	    data->frame.length > 15) {
 		BA->com_return_error(data, sizeof(MessageHeader), MESSAGE_ERROR_CODE_INVALID_PARAMETER, com);
 		return;
 	}
@@ -640,6 +760,46 @@ void get_configuration(const ComType com, const GetConfiguration *data) {
 	gcr.write_timeout    = bc->write_timeout;
 
 	BA->send_blocking_with_timeout(&gcr, sizeof(gcr), com);
+}
+
+void set_read_filter(const ComType com, const SetReadFilter *data) {
+	BrickContext *bc = BC;
+
+	if (data->mode > FILTER_MODE_MATCH_EXTENDED) {
+		BA->com_return_error(data, sizeof(MessageHeader), MESSAGE_ERROR_CODE_INVALID_PARAMETER, com);
+		return;
+	}
+
+	bc->filter_mode = data->mode;
+
+	if (data->mode > FILTER_MODE_ACCEPT_ALL) {
+		bc->filter_mask = data->mask;
+		bc->filter1     = data->filter1;
+		bc->filter2     = data->filter2;
+	} else {
+		bc->filter_mask = 0;
+		bc->filter1     = 0;
+		bc->filter2     = 0;
+	}
+
+	bc->status |= STATUS_ENTERING_CONFIG_MODE;
+	bc->status &= ~STATUS_LEAVING_CONFIG_MODE;
+
+	BA->com_return_setter(com, data);
+}
+
+void get_read_filter(const ComType com, const GetReadFilter *data) {
+	const BrickContext *bc = BC;
+	GetReadFilterReturn grfr;
+
+	grfr.header        = data->header;
+	grfr.header.length = sizeof(grfr);
+	grfr.mode          = bc->filter_mode;
+	grfr.mask          = bc->filter_mask;
+	grfr.filter1       = bc->filter1;
+	grfr.filter2       = bc->filter2;
+
+	BA->send_blocking_with_timeout(&grfr, sizeof(grfr), com);
 }
 
 void get_error_log(const ComType com, const GetErrorLog *data) {

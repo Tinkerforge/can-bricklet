@@ -242,6 +242,8 @@
 #define REG_RXBnDLC_DLC_mask                 0b00001111
 #define REG_RXBnDLC_DLC_offset               0
 
+#define REG_RXFnSIDL_EXIDE                   0b00001000
+
 #define BUFFER_COUNT 8
 #define BUFFER_LENGTH 13
 
@@ -249,6 +251,8 @@
 #define STATUS_ENTERING_CONFIG_MODE          0b00000010
 #define STATUS_LEAVING_CONFIG_MODE           0b00000100
 #define STATUS_VALID_TXB0_HEADER             0b00001000
+#define STATUS_WRITE_PENDING                 0b00010000
+#define STATUS_WRITE_ABORTED                 0b00100000
 
 typedef struct {
 	uint32_t write_timeout_count;
@@ -269,7 +273,7 @@ typedef struct {
 
 	uint8_t baud_rate;
 	uint8_t transceiver_mode;
-	int32_t write_timeout; // > 0 (timeout), 0 (infinite), < 0 (one-shot)
+	int32_t write_timeout; // < 0 (one-shot), = 0 (infinite), > 0 (timeout)
 	int32_t write_timeout_counter;
 
 	uint8_t filter_mode;

@@ -33,8 +33,10 @@
 #define FID_IS_FRAME_READ_CALLBACK_ENABLED 5
 #define FID_SET_CONFIGURATION 6
 #define FID_GET_CONFIGURATION 7
-#define FID_GET_ERROR_LOG 8
-#define FID_FRAME_READ 9
+#define FID_SET_READ_FILTER 8
+#define FID_GET_READ_FILTER 9
+#define FID_GET_ERROR_LOG 10
+#define FID_FRAME_READ 11
 
 #define BAUD_RATE_10000 0
 #define BAUD_RATE_20000 1
@@ -55,9 +57,10 @@
 #define FRAME_TYPE_EXTENDED_REMOTE 3
 
 #define FILTER_MODE_DISABLED 0
-#define FILTER_MODE_MATCH_STANDARD 1
-#define FILTER_MODE_MATCH_STANDARD_AND_DATA 2
-#define FILTER_MODE_MATCH_EXTENDED 3
+#define FILTER_MODE_ACCEPT_ALL 1
+#define FILTER_MODE_MATCH_STANDARD 2
+#define FILTER_MODE_MATCH_STANDARD_AND_DATA 3
+#define FILTER_MODE_MATCH_EXTENDED 4
 
 typedef struct {
 	uint8_t frame_type;
@@ -127,6 +130,26 @@ typedef struct {
 
 typedef struct {
 	MessageHeader header;
+	uint8_t mode;
+	uint32_t mask;
+	uint32_t filter1;
+	uint32_t filter2;
+} __attribute__((__packed__)) SetReadFilter;
+
+typedef struct {
+	MessageHeader header;
+} __attribute__((__packed__)) GetReadFilter;
+
+typedef struct {
+	MessageHeader header;
+	uint8_t mode;
+	uint32_t mask;
+	uint32_t filter1;
+	uint32_t filter2;
+} __attribute__((__packed__)) GetReadFilterReturn;
+
+typedef struct {
+	MessageHeader header;
 } __attribute__((__packed__)) GetErrorLog;
 
 typedef struct {
@@ -166,6 +189,11 @@ uint8_t mcp2515_read_rx_status(void);
 void mcp2515_write_bits(const uint8_t reg, const uint8_t mask, const uint8_t data);
 void mcp2515_rts_txb0(void);
 
+void apply_config(void);
+
+void compose_identifier(uint8_t *buffer, const uint32_t identifier,
+                        const bool extended, const uint8_t extended_bit);
+
 bool txb_enqueue(const Frame *frame);
 bool rxb_dequeue(Frame *frame);
 
@@ -178,6 +206,9 @@ void is_frame_read_callback_enabled(const ComType com, const IsFrameReadCallback
 
 void set_configuration(const ComType com, const SetConfiguration *data);
 void get_configuration(const ComType com, const GetConfiguration *data);
+
+void set_read_filter(const ComType com, const SetReadFilter *data);
+void get_read_filter(const ComType com, const GetReadFilter *data);
 
 void get_error_log(const ComType com, const GetErrorLog *data);
 
