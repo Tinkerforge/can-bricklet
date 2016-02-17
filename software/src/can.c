@@ -51,6 +51,7 @@
 // Typical:
 // T_DELAY = 1 * T_Q to 2 * T_Q
 
+// FIXME: CANopen specification 301 recommends to put the SamplingPoint at 87.5%
 const uint8_t baud_rate_cnf[][3] = { // CNF3, CNF2, CNF1
 	// BAUD_RATE_10000 (NBT = 100µs): BRP = 49 -> T_Q = 6.25µs -> NBT = 16 * T_Q,
 	// PRSEG = 1 -> PropSeg = 2 * T_Q, PHSEG1 = 6 -> PS1 = 7 * T_Q, PHSEG2 = 5 -> PS2 = 6 * T_Q, SamplingPoint = 62.5%
@@ -202,7 +203,7 @@ void tick(const uint8_t tick_type) {
 
 	if (tick_type & TICK_TASK_TYPE_CALCULATION) {
 		if ((bc->status & STATUS_ENTERING_CONFIG_MODE) != 0) {
-			mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask, REG_CANCTRL_REQOP_CONFIG); // 4 bytes
+			mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask, REG_CANCTRL_REQOP_CONFIG); // 4 bytes // FIXME: could do 3 bytes register write by caching CANCTRL
 
 			const uint8_t canstat = mcp2515_read_register(REG_CANSTAT); // 3 bytes
 
@@ -216,7 +217,7 @@ void tick(const uint8_t tick_type) {
 
 		if ((bc->status & STATUS_LEAVING_CONFIG_MODE) != 0) {
 			mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_REQOP_mask,
-			                   transceiver_mode_canctrl[bc->transceiver_mode]); // 4 bytes
+			                   transceiver_mode_canctrl[bc->transceiver_mode]); // 4 bytes // FIXME: could do 3 bytes register write by caching CANCTRL
 
 			const uint8_t canstat = mcp2515_read_register(REG_CANSTAT); // 3 bytes
 
@@ -240,6 +241,15 @@ void tick(const uint8_t tick_type) {
 			// algorithm for this, but have failed. For now I keep it simple
 			// and just completely ignore RXB1. Also there is not enough time
 			// per tick to read more than one RXB per tick over SPI at 400 kHz.
+
+			// Reading RXB0 requires to transceive X bytes:
+			//
+			// X = 4 bytes (buffer overflow)
+			// X = 7 bytes (register and buffer overflow)
+			// X = 9 to 17 bytes (data length 0 to 8)
+			// X = 12 to 20 bytes (register overflow and data length 0 to 8)
+			//
+			// At 400 kHz transceiving one byte takes 20 µs over SPI.
 			if ((status & INST_READ_STATUS_CANINTF_RX0IF) != 0) {
 				const uint8_t eflg = mcp2515_read_register(REG_EFLG); // 3 bytes
 
@@ -264,18 +274,21 @@ void tick(const uint8_t tick_type) {
 #if 0
 			// FIXME: this block is just for debugging
 			if ((status & INST_READ_STATUS_CANINTF_RX1IF) != 0) {
-				ba->printf("R1 ign\n\r");
-				mcp2515_write_bits(REG_CANINTF, REG_CANINTF_RX1IF, 0);
+				ba->printf("R1 ignore\n\r");
+				mcp2515_write_bits(REG_CANINTF, REG_CANINTF_RX1IF, 0); // 4 bytes
 			}
 #endif
 
-			// Handle write timeout
+			// Handling a normal write timeout (> 0) requires to transceive
+			// 4 bytes in the tick in that the timeout was detected and another
+			// 4 bytes in the next tick. Detecting a one-shot timeout (< 0)
+			// requires to transceive 3 bytes.
 			if (bc->write_timeout_counter > 0) {
 				bc->write_timeout_counter--;
 
 				if (bc->write_timeout_counter == 0 &&
 				    (status & INST_READ_STATUS_TXB0CTRL_TXREQ) != 0) {
-					mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_ABAT, REG_CANCTRL_ABAT); // 4 bytes
+					mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_ABAT, REG_CANCTRL_ABAT); // 4 bytes // FIXME: could do 3 bytes register write by caching CANCTRL
 
 					bc->status |= STATUS_WRITE_ABORTED;
 					bc->write_timeout_count++;
@@ -284,14 +297,14 @@ void tick(const uint8_t tick_type) {
 
 			if ((status & INST_READ_STATUS_TXB0CTRL_TXREQ) == 0) {
 				if ((bc->status & STATUS_WRITE_ABORTED) != 0) {
-					mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_ABAT, 0); // 4 bytes
+					mcp2515_write_bits(REG_CANCTRL, REG_CANCTRL_ABAT, 0); // 4 bytes // FIXME: could do 3 bytes register write by caching CANCTRL
 
 					bc->status &= ~STATUS_WRITE_ABORTED;
 				}
 
 				if ((bc->status & STATUS_WRITE_PENDING) != 0) {
 					if (bc->write_timeout < 0) {
-						const uint8_t txb0ctrl = mcp2515_read_register(REG_TXB0CTRL);
+						const uint8_t txb0ctrl = mcp2515_read_register(REG_TXB0CTRL); // 3 bytes
 
 						if ((txb0ctrl & REG_TXBnCTRL_ABTF) != 0) {
 							bc->write_timeout_count++;
@@ -315,6 +328,13 @@ void tick(const uint8_t tick_type) {
 				// than one TXB would not result in a significant increase in
 				// throughput even at higher baud rates than 125 kbit/s, as
 				// there are only 1000 frames per second to be transmitted.
+
+				// Writing TXB0 requires to transceive X bytes:
+				//
+				// X = 1 to 9 bytes (header cached and data length 0 to 8)
+				// X = 7 to 15 bytes (data length 0 to 8)
+				//
+				// At 400 kHz transceiving one byte takes 20 µs over SPI.
 				if (bc->txb_start != bc->txb_end) {
 					const uint8_t *txb = bc->txb[bc->txb_start];
 					bc->txb_start = (bc->txb_start + 1) % BUFFER_COUNT;
