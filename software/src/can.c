@@ -829,14 +829,14 @@ void get_error_log(const ComType com, const GetErrorLog *data) {
 	gelr.header                       = data->header;
 	gelr.header.length                = sizeof(gelr);
 
-	const uint8_t eflg = mcp2515_read_register(REG_EFLG); // 3 bytes
 	uint8_t tec_rec[2];
-
 	mcp2515_read_registers(REG_TEC, tec_rec, 2); // 4 bytes
 
-	gelr.transceiver_disabled         = (eflg & REG_EFLG_TXBO) != 0;
+	const uint8_t eflg = mcp2515_read_register(REG_EFLG); // 3 bytes
+
 	gelr.write_error_level            = tec_rec[0];
 	gelr.read_error_level             = tec_rec[1];
+	gelr.transceiver_disabled         = (eflg & REG_EFLG_TXBO) != 0;
 	gelr.write_timeout_count          = bc->write_timeout_count;
 	gelr.read_register_overflow_count = bc->read_register_overflow_count;
 	gelr.read_buffer_overflow_count   = bc->read_buffer_overflow_count;

@@ -154,9 +154,9 @@ typedef struct {
 
 typedef struct {
 	MessageHeader header;
-	bool transceiver_disabled;
 	uint8_t write_error_level;
 	uint8_t read_error_level;
+	bool transceiver_disabled;
 	uint32_t write_timeout_count;
 	uint32_t read_register_overflow_count;
 	uint32_t read_buffer_overflow_count;
