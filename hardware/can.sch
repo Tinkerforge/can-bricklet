@@ -84,16 +84,16 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "CAN Bricklet"
-Date "Di 10 Nov 2015"
+Date "2016-03-22"
 Rev "1.0"
 Comp "Tinkerforge GmbH"
 Comment1 "Licensed under CERN OHL v.1.1"
-Comment2 "Copyright (©) 2015, B.Nordmeyer <bastian@tinkerforge.com>"
+Comment2 "Copyright (©) 2016, B.Nordmeyer <bastian@tinkerforge.com>"
 Comment3 ""
 Comment4 ""
 $EndDescr
 Text Notes 550  7700 0    40   ~ 0
-Copyright Tinkerforge GmbH 2015.\nThis documentation describes Open Hardware and is licensed under the\nCERN OHL v. 1.1.\nYou may redistribute and modify this documentation under the terms of the\nCERN OHL v.1.1. (http://ohwr.org/cernohl). This documentation is distributed\nWITHOUT ANY EXPRESS OR IMPLIED WARRANTY, INCLUDING OF\nMERCHANTABILITY, SATISFACTORY QUALITY AND FITNESS FOR A\nPARTICULAR PURPOSE. Please see the CERN OHL v.1.1 for applicable\nconditions\n
+Copyright Tinkerforge GmbH 2016.\nThis documentation describes Open Hardware and is licensed under the\nCERN OHL v. 1.1.\nYou may redistribute and modify this documentation under the terms of the\nCERN OHL v.1.1. (http://ohwr.org/cernohl). This documentation is distributed\nWITHOUT ANY EXPRESS OR IMPLIED WARRANTY, INCLUDING OF\nMERCHANTABILITY, SATISFACTORY QUALITY AND FITNESS FOR A\nPARTICULAR PURPOSE. Please see the CERN OHL v.1.1 for applicable\nconditions\n
 $Comp
 L GND #PWR01
 U 1 1 4CE29748
@@ -467,7 +467,7 @@ L R R4
 U 1 1 56426D06
 P 6650 4450
 F 0 "R4" V 6730 4450 50  0000 C CNN
-F 1 "100" V 6650 4450 50  0000 C CNN
+F 1 "120" V 6650 4450 50  0000 C CNN
 F 2 "kicad-libraries:0603E" H 6650 4450 60  0001 C CNN
 F 3 "" H 6650 4450 60  0001 C CNN
 	1    6650 4450
@@ -478,7 +478,7 @@ L R R5
 U 1 1 56426E48
 P 6900 4450
 F 0 "R5" V 6980 4450 50  0000 C CNN
-F 1 "100" V 6900 4450 50  0000 C CNN
+F 1 "120" V 6900 4450 50  0000 C CNN
 F 2 "kicad-libraries:0603E" H 6900 4450 60  0001 C CNN
 F 3 "" H 6900 4450 60  0001 C CNN
 	1    6900 4450
@@ -511,7 +511,7 @@ L C C12
 U 1 1 56426F35
 P 6900 5050
 F 0 "C12" V 6950 5100 50  0000 L CNN
-F 1 "560pF" V 6950 4750 50  0000 L CNN
+F 1 "470pF" V 6950 4750 50  0000 L CNN
 F 2 "kicad-libraries:0603E" H 6900 5050 60  0001 C CNN
 F 3 "" H 6900 5050 60  0001 C CNN
 	1    6900 5050
@@ -522,7 +522,7 @@ L C C11
 U 1 1 5642711B
 P 6650 5050
 F 0 "C11" V 6700 5100 50  0000 L CNN
-F 1 "560pF" V 6700 4750 50  0000 L CNN
+F 1 "470pF" V 6700 4750 50  0000 L CNN
 F 2 "kicad-libraries:0603E" H 6650 5050 60  0001 C CNN
 F 3 "" H 6650 5050 60  0001 C CNN
 	1    6650 5050
@@ -749,7 +749,7 @@ L C C8
 U 1 1 56428F64
 P 5100 5050
 F 0 "C8" V 5150 5100 50  0000 L CNN
-F 1 "TBD" V 5150 4750 50  0000 L CNN
+F 1 "DNP" V 5150 4750 50  0000 L CNN
 F 2 "kicad-libraries:0603E" H 5100 5050 60  0001 C CNN
 F 3 "" H 5100 5050 60  0001 C CNN
 	1    5100 5050
@@ -760,7 +760,7 @@ L C C6
 U 1 1 5642925D
 P 4450 5050
 F 0 "C6" V 4500 5100 50  0000 L CNN
-F 1 "TBD" V 4500 4750 50  0000 L CNN
+F 1 "DNP" V 4500 4750 50  0000 L CNN
 F 2 "kicad-libraries:0603E" H 4450 5050 60  0001 C CNN
 F 3 "" H 4450 5050 60  0001 C CNN
 	1    4450 5050
@@ -809,8 +809,6 @@ Wire Wire Line
 	5100 5250 5100 5450
 Wire Wire Line
 	4650 5450 4650 5100
-Text Notes 7000 3550 0    60   ~ 0
-PESD1CAN
 Wire Wire Line
 	2450 2750 2450 4300
 Wire Wire Line
