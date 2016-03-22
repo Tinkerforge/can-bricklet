@@ -41,7 +41,7 @@
   )
 
   (setup
-    (last_trace_width 0.5)
+    (last_trace_width 0.249)
     (user_trace_width 0.25)
     (user_trace_width 0.29972)
     (user_trace_width 0.35052)
@@ -6979,7 +6979,7 @@
   (gr_text "Termination\noff - on" (at 155.8 84.7 180) (layer F.SilkS)
     (effects (font (size 0.8 0.8) (thickness 0.15)))
   )
-  (gr_text "CAN-H  CAN-L   GND" (at 169.1 101 90) (layer F.SilkS)
+  (gr_text "CAN-L  CAN-H   GND" (at 169.1 101 90) (layer F.SilkS)
     (effects (font (size 0.8 0.8) (thickness 0.15)))
   )
   (gr_line (start 170.3 85.6) (end 170.3 115.6) (angle 90) (layer Edge.Cuts) (width 0.381))
