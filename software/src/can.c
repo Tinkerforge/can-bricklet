@@ -548,19 +548,19 @@ void apply_config(void) {
 		// After reset RXBnCTRL.RXM is set to 00 ("Receive all valid
 		// messages using either standard or extended identifiers that meet
 		// filter criteria.") and RXMnSIDH to RXMnEID0 is set to all zero.
-		// So all masks are zero. This implied to me that all vaild standard
+		// So all masks are zero. This implied to me that all valid standard
 		// and extended messages should be accepted.
 		//
 		// But this is not the case. In reality the RXFnSIDL.EXIDE bit
 		// defines if a standard or extended message is accepted even if
 		// the mask is all zero. But all the RXFnSIDL registers have
-		// undefined values after reset. This measn that it is undefined
+		// undefined values after reset. This means that it is undefined
 		// whether or not a particular filter will accept standard or
 		// extended message.
 		//
 		// To create a true accept-all mode the filter have to be configured
 		// in a way that there is a filter with the RXFnSIDL.EXIDE bit set
-		// and aother filter with the RXFnSIDL.EXIDE cleared for each RXB.
+		// and another filter with the RXFnSIDL.EXIDE cleared for each RXB.
 		mode = REG_RXBnCTRL_RXM_BOTH;
 	} else if (bc->filter_mode == FILTER_MODE_MATCH_STANDARD) {
 		mode = REG_RXBnCTRL_RXM_STANDARD_ONLY;
