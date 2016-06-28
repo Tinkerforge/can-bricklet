@@ -158,24 +158,6 @@ void constructor(void) {
 	SLEEP_US(200);
 
 	apply_config();
-
-	/*
-	F0 10
-	F1 104
-	F2 96
-	F3 160
-	F4 64
-	F5 0
-	*/
-
-#if 0
-	BA->printf("F0 %d\n\r", mcp2515_read_register(REG_RXF0SIDL));
-	BA->printf("F1 %d\n\r", mcp2515_read_register(REG_RXF1SIDL));
-	BA->printf("F2 %d\n\r", mcp2515_read_register(REG_RXF2SIDL));
-	BA->printf("F3 %d\n\r", mcp2515_read_register(REG_RXF3SIDL));
-	BA->printf("F4 %d\n\r", mcp2515_read_register(REG_RXF4SIDL));
-	BA->printf("F5 %d\n\r", mcp2515_read_register(REG_RXF5SIDL));
-#endif
 }
 
 void destructor(void) {
