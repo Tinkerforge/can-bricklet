@@ -1,0 +1,39 @@
+Needs["NETLink`"]
+LoadNETAssembly["Tinkerforge",NotebookDirectory[]<>"../../.."]
+
+host="localhost"
+port=4223
+uid="XYZ"(*Change to your UID*)
+
+(*Create IPConnection and device object*)
+ipcon=NETNew["Tinkerforge.IPConnection"]
+can=NETNew["Tinkerforge.BrickletCAN",uid,ipcon]
+ipcon@Connect[host,port]
+
+(*Configure transceiver for loopback mode*)
+can@SetConfiguration[BrickletCAN`BAUDURATEU1000KBPS,BrickletCAN`TRANSCEIVERUMODEULOOPBACK,0]
+
+(*Callback function for frame read callback *)
+FrameReadCB[sender_,frameType_,identifier_,data_,length_]:=
+ Module[{},
+  Print["Frame Type: "<>ToString[N[frameType]]];
+  Print["Identifier: "<>ToString[N[identifier]]];
+  Print["Data (Length: "<>ToString[N[length]]<>"): "<>ToString[data]]
+ ]
+
+AddEventHandler[can@FrameRead,FrameReadCB]
+
+(*Enable frame read callback*)
+can@EnableFrameReadCallback[]
+
+(*Write standard data frame with identifier 1742 and 3 bytes of data*)
+data={42,23,17,0,0,0,0,0}
+can@WriteFrame[BrickletCAN`FRAMEUTYPEUSTANDARDUDATA,1742,data,3]
+
+Input["Click OK to exit"]
+
+(*Clean up*)
+can@DisableFrameReadCallback[]
+ipcon@Disconnect[]
+ReleaseNETObject[can]
+ReleaseNETObject[ipcon]

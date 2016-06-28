@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <head>
+        <title>Tinkerforge | JavaScript Example</title>
+    </head>
+    <body>
+        <div style="text-align:center;">
+            <h1>CAN Bricklet Loopback Example</h1>
+            <p>
+                <input value="localhost" id="host" type="text" size="20">:
+                <input value="4280" id="port" type="text" size="5">,
+                <input value="uid" id="uid" type="text" size="5">
+                <input value="Start Example" id="start" type="button" onclick="startExample();">
+            </p>
+            <p>
+                <textarea readonly id="text" cols="80" rows="24" style="resize:none;"
+                          >Press "Start Example" to begin ...</textarea>
+            </p>
+        <div>
+        <script src="./Tinkerforge.js" type='text/javascript'></script>
+        <script type='text/javascript'>
+            var ipcon;
+            var textArea = document.getElementById("text");
+            function startExample() {
+                textArea.value = "";
+                var HOST = document.getElementById("host").value;
+                var PORT = parseInt(document.getElementById("port").value);
+                var UID = document.getElementById("uid").value;
+                if(ipcon !== undefined) {
+                    ipcon.disconnect();
+                }
+                ipcon = new Tinkerforge.IPConnection(); // Create IP connection
+                var can = new Tinkerforge.BrickletCAN(UID, ipcon); // Create device object
+                ipcon.connect(HOST, PORT,
+                    function(error) {
+                        textArea.value += 'Error: ' + error + '\n';
+                    }
+                ); // Connect to brickd
+                // Don't use device before ipcon is connected
+
+                ipcon.on(Tinkerforge.IPConnection.CALLBACK_CONNECTED,
+                    function (connectReason) {
+                        // Configure transceiver for loopback mode
+                        can.setConfiguration(Tinkerforge.BrickletCAN.BAUD_RATE_1000KBPS,
+                                             Tinkerforge.BrickletCAN.TRANSCEIVER_MODE_LOOPBACK, 0);
+
+                        // Enable frame read callback
+                        can.enableFrameReadCallback();
+
+                        // Write standard data frame with identifier 1742 and 3 bytes of data
+                        var data = [42, 23, 17, 0, 0, 0, 0, 0];
+                        can.writeFrame(Tinkerforge.BrickletCAN.FRAME_TYPE_STANDARD_DATA, 1742, data, 3);
+                    }
+                );
+
+                // Register frame read callback
+                can.on(Tinkerforge.BrickletCAN.CALLBACK_FRAME_READ,
+                    // Callback function for frame read callback
+                    function (frameType, identifier, data, len) {
+                        textArea.value += 'Frame Type: ' + frameType + '\n';
+                        textArea.value += 'Identifier: ' + identifier + '\n';
+                        textArea.value += 'Data (Length: ' + len + '):';
+
+                        for (var i = 0; i < len && i < 8; ++i) {
+                            textArea.value += ' ' + data[i];
+                        }
+
+                        textArea.value += '\n';
+                    }
+                );
+            }
+        </script>
+    </body>
+</html>
