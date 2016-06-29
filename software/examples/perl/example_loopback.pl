@@ -33,7 +33,7 @@ $can->register_callback($can->CALLBACK_FRAME_READ, 'cb_frame_read');
 $can->enable_frame_read_callback();
 
 # Write standard data frame with identifier 1742 and 3 bytes of data
-$data = [42, 23, 17, 0, 0, 0, 0, 0];
+my $data = [42, 23, 17, 0, 0, 0, 0, 0];
 $can->write_frame($can->FRAME_TYPE_STANDARD_DATA, 1742, $data, 3);
 
 print "Press key to exit\n";
