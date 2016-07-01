@@ -8,7 +8,7 @@ use Tinkerforge\BrickletCAN;
 
 const HOST = 'localhost';
 const PORT = 4223;
-const UID = 'XYZ'; // Change to your UID
+const UID = 'XYZ'; // Change XYZ to the UID of your CAN Bricklet
 
 // Callback function for frame read callback
 function cb_frame_read($frame_type, $identifier, $data, $length)
@@ -31,7 +31,8 @@ $ipcon->connect(HOST, PORT); // Connect to brickd
 // Don't use device before ipcon is connected
 
 // Configure transceiver for loopback mode
-$can->setConfiguration(BrickletCAN::BAUD_RATE_1000KBPS, BrickletCAN::TRANSCEIVER_MODE_LOOPBACK, 0);
+$can->setConfiguration(BrickletCAN::BAUD_RATE_1000KBPS,
+                       BrickletCAN::TRANSCEIVER_MODE_LOOPBACK, 0);
 
 // Register frame read callback to function cb_frame_read
 $can->registerCallback(BrickletCAN::CALLBACK_FRAME_READ, 'cb_frame_read');

@@ -4,7 +4,9 @@ import com.tinkerforge.BrickletCAN;
 public class ExampleLoopback {
 	private static final String HOST = "localhost";
 	private static final int PORT = 4223;
-	private static final String UID = "XYZ"; // Change to your UID
+
+	// Change XYZ to the UID of your CAN Bricklet
+	private static final String UID = "XYZ";
 
 	// Note: To make the example code cleaner we do not handle exceptions. Exceptions
 	//       you might normally want to catch are described in the documentation
@@ -16,7 +18,8 @@ public class ExampleLoopback {
 		// Don't use device before ipcon is connected
 
 		// Configure transceiver for loopback mode
-		can.setConfiguration(BrickletCAN.BAUD_RATE_1000KBPS, BrickletCAN.TRANSCEIVER_MODE_LOOPBACK, 0);
+		can.setConfiguration(BrickletCAN.BAUD_RATE_1000KBPS,
+		                     BrickletCAN.TRANSCEIVER_MODE_LOOPBACK, 0);
 
 		// Add frame read listener
 		can.addFrameReadListener(new BrickletCAN.FrameReadListener() {

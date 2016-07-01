@@ -4,7 +4,7 @@ function matlab_example_loopback()
 
     HOST = 'localhost';
     PORT = 4223;
-    UID = 'XYZ'; % Change to your UID
+    UID = 'XYZ'; % Change XYZ to the UID of your CAN Bricklet
 
     ipcon = IPConnection(); % Create IP connection
     can = handle(BrickletCAN(UID, ipcon), 'CallbackProperties'); % Create device object
@@ -13,7 +13,8 @@ function matlab_example_loopback()
     % Don't use device before ipcon is connected
 
     % Configure transceiver for loopback mode
-    can.setConfiguration(BrickletCAN.BAUD_RATE_1000KBPS, BrickletCAN.TRANSCEIVER_MODE_LOOPBACK, 0);
+    can.setConfiguration(BrickletCAN.BAUD_RATE_1000KBPS, ...
+                         BrickletCAN.TRANSCEIVER_MODE_LOOPBACK, 0);
 
     % Register frame read callback to function cb_frame_read
     set(can, 'FrameReadCallback', @(h, e) cb_frame_read(e));

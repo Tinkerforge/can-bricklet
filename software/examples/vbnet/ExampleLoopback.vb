@@ -4,7 +4,7 @@ Imports Tinkerforge
 Module ExampleLoopback
     Const HOST As String = "localhost"
     Const PORT As Integer = 4223
-    Const UID As String = "XYZ" ' Change to your UID
+    Const UID As String = "XYZ" ' Change XYZ to the UID of your CAN Bricklet
 
     ' Callback subroutine for frame read callback
     Sub FrameReadCB(ByVal sender As BrickletCAN, ByVal frameType As Byte, _
@@ -29,7 +29,8 @@ Module ExampleLoopback
         ' Don't use device before ipcon is connected
 
         ' Configure transceiver for loopback mode
-        can.SetConfiguration(BrickletCAN.BAUD_RATE_1000KBPS, BrickletCAN.TRANSCEIVER_MODE_LOOPBACK, 0)
+        can.SetConfiguration(BrickletCAN.BAUD_RATE_1000KBPS, _
+                             BrickletCAN.TRANSCEIVER_MODE_LOOPBACK, 0)
 
         ' Register frame read callback to subroutine FrameReadCB
         AddHandler can.FrameRead, AddressOf FrameReadCB

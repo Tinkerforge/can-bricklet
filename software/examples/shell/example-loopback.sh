@@ -1,7 +1,7 @@
 #!/bin/sh
 # Connects to localhost:4223 by default, use --host and --port to change this
 
-uid=XYZ # Change to your UID
+uid=XYZ # Change XYZ to the UID of your CAN Bricklet
 
 # Configure transceiver for loopback mode
 tinkerforge call can-bricklet $uid set-configuration 1000kbps loopback 0

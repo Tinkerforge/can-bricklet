@@ -5,7 +5,7 @@
 
 #define HOST "localhost"
 #define PORT 4223
-#define UID "XYZ" // Change to your UID
+#define UID "XYZ" // Change XYZ to the UID of your CAN Bricklet
 
 // Callback function for read callback
 void cb_frame_read(uint8_t frame_type, uint32_t identifier,
