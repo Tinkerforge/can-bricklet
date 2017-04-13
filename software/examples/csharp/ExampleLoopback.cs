@@ -35,7 +35,7 @@ class Example
 		                     BrickletCAN.TRANSCEIVER_MODE_LOOPBACK, 0);
 
 		// Register frame read callback to function FrameReadCB
-		can.FrameRead += FrameReadCB;
+		can.FrameReadCallback += FrameReadCB;
 
 		// Enable frame read callback
 		can.EnableFrameReadCallback();
