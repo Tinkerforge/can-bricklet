@@ -4,7 +4,7 @@
 uid=XYZ # Change XYZ to the UID of your CAN Bricklet
 
 # Configure transceiver for loopback mode
-tinkerforge call can-bricklet $uid set-configuration 1000kbps loopback 0
+tinkerforge call can-bricklet $uid set-configuration baud-rate-1000kbps transceiver-mode-loopback 0
 
 # Handle incoming frame read callback
 tinkerforge dispatch can-bricklet $uid frame-read &
@@ -13,7 +13,7 @@ tinkerforge dispatch can-bricklet $uid frame-read &
 tinkerforge call can-bricklet $uid enable-frame-read-callback
 
 # Write standard data frame with identifier 1742 and 3 bytes of data
-tinkerforge call can-bricklet $uid write-frame standard-data 1742 42,23,1,.. 3
+tinkerforge call can-bricklet $uid write-frame frame-type-standard-data 1742 42,23,1,.. 3
 
 echo "Press key to exit"; read dummy
 
