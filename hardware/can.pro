@@ -1,4 +1,4 @@
-update=Fr 05 Feb 2016 15:51:17 CET
+update=Di 01 Aug 2017 14:42:00 CEST
 version=1
 last_client=kicad
 [cvpcb]
@@ -60,7 +60,7 @@ RptLab=1
 LabSize=60
 [eeschema]
 version=1
-LibDir=kicad-libraries.pretty
+LibDir=kicad-libraries
 [eeschema/libraries]
 LibName1=tinkerforge
 LibName2=power
