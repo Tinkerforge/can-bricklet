@@ -14,7 +14,7 @@ function octave_example_loopback()
     % Configure transceiver for loopback mode
     can.setConfiguration(can.BAUD_RATE_1000KBPS, can.TRANSCEIVER_MODE_LOOPBACK, 0);
 
-    % Register read callback to function cb_read
+    % Register frame read callback to function cb_frame_read
     can.addFrameReadCallback(@cb_frame_read);
 
     % Enable frame read callback

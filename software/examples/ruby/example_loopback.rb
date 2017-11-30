@@ -21,7 +21,8 @@ can.set_configuration BrickletCAN::BAUD_RATE_1000KBPS, \
                       BrickletCAN::TRANSCEIVER_MODE_LOOPBACK, 0
 
 # Register frame read callback
-can.register_callback(BrickletCAN::CALLBACK_FRAME_READ) do |frame_type, identifier, data, length|
+can.register_callback(BrickletCAN::CALLBACK_FRAME_READ) do |frame_type, identifier, data,
+                                                            length|
   puts "Frame Type: #{frame_type}"
   puts "Identifier: #{identifier}"
   puts "Data (Length: #{length}): #{data[0, [length, 8].min].join(' ')}"

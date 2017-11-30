@@ -11,7 +11,7 @@ const PORT = 4223;
 const UID = 'XYZ'; // Change XYZ to the UID of your CAN Bricklet
 
 // Callback function for frame read callback
-function cb_frame_read($frame_type, $identifier, $data, $length)
+function cb_frameRead($frame_type, $identifier, $data, $length)
 {
     echo "Frame Type: " . $frame_type . "\n";
     echo "Identifier: " . $identifier . "\n";
@@ -34,8 +34,8 @@ $ipcon->connect(HOST, PORT); // Connect to brickd
 $can->setConfiguration(BrickletCAN::BAUD_RATE_1000KBPS,
                        BrickletCAN::TRANSCEIVER_MODE_LOOPBACK, 0);
 
-// Register frame read callback to function cb_frame_read
-$can->registerCallback(BrickletCAN::CALLBACK_FRAME_READ, 'cb_frame_read');
+// Register frame read callback to function cb_frameRead
+$can->registerCallback(BrickletCAN::CALLBACK_FRAME_READ, 'cb_frameRead');
 
 // Enable frame read callback
 $can->enableFrameReadCallback();

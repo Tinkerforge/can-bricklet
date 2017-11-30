@@ -13,7 +13,7 @@ ipcon@Connect[host,port]
 (*Configure transceiver for loopback mode*)
 can@SetConfiguration[BrickletCAN`BAUDURATEU1000KBPS,BrickletCAN`TRANSCEIVERUMODEULOOPBACK,0]
 
-(*Callback function for frame read callback *)
+(*Callback function for frame read callback*)
 FrameReadCB[sender_,frameType_,identifier_,data_,length_]:=
  Module[{},
   Print["Frame Type: "<>ToString[N[frameType]]];
@@ -21,7 +21,7 @@ FrameReadCB[sender_,frameType_,identifier_,data_,length_]:=
   Print["Data (Length: "<>ToString[N[length]]<>"): "<>ToString[data]]
  ]
 
-AddEventHandler[can@FrameRead,FrameReadCB]
+AddEventHandler[can@FrameReadCallback,FrameReadCB]
 
 (*Enable frame read callback*)
 can@EnableFrameReadCallback[]

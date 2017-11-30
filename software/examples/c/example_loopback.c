@@ -7,9 +7,9 @@
 #define PORT 4223
 #define UID "XYZ" // Change XYZ to the UID of your CAN Bricklet
 
-// Callback function for read callback
-void cb_frame_read(uint8_t frame_type, uint32_t identifier,
-                   uint8_t data[8], uint8_t length, void *user_data) {
+// Callback function for frame read callback
+void cb_frame_read(uint8_t frame_type, uint32_t identifier, uint8_t data[8],
+                   uint8_t length, void *user_data) {
 	(void)user_data; // avoid unused parameter warning
 
 	printf("Frame Type: %d\n", frame_type);

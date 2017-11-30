@@ -26,7 +26,7 @@ const
 var
   e: TExample;
 
-{ Callback function for frameread callback }
+{ Callback procedure for frame read callback }
 procedure TExample.FrameReadCB(sender: TBrickletCAN; const frameType: byte;
                                const identifier: longword; const data: TArray0To7OfUInt8;
                                const len: byte);

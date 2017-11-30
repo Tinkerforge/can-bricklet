@@ -8,7 +8,8 @@ Module ExampleLoopback
 
     ' Callback subroutine for frame read callback
     Sub FrameReadCB(ByVal sender As BrickletCAN, ByVal frameType As Byte, _
-                    ByVal identifier As Long, ByVal data As Byte(), ByVal length As Byte)
+                    ByVal identifier As Long, ByVal data As Byte(), _
+                    ByVal length As Byte)
         Console.WriteLine("Frame Type: {0}", frameType)
         Console.WriteLine("Identifier: {0}", identifier)
 
@@ -33,7 +34,7 @@ Module ExampleLoopback
                              BrickletCAN.TRANSCEIVER_MODE_LOOPBACK, 0)
 
         ' Register frame read callback to subroutine FrameReadCB
-        AddHandler can.FrameRead, AddressOf FrameReadCB
+        AddHandler can.FrameReadCallback, AddressOf FrameReadCB
 
         ' Enable frame read callback
         can.EnableFrameReadCallback()

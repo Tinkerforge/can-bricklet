@@ -6,7 +6,7 @@ uid=XYZ # Change XYZ to the UID of your CAN Bricklet
 # Configure transceiver for loopback mode
 tinkerforge call can-bricklet $uid set-configuration baud-rate-1000kbps transceiver-mode-loopback 0
 
-# Handle incoming frame read callback
+# Handle incoming frame read callbacks
 tinkerforge dispatch can-bricklet $uid frame-read &
 
 # Enable frame read callback

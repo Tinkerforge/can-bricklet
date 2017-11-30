@@ -8,8 +8,8 @@ class Example
 	private static string UID = "XYZ"; // Change XYZ to the UID of your CAN Bricklet
 
 	// Callback function for frame read callback
-	static void FrameReadCB(BrickletCAN sender, byte frameType,
-	                        long identifier, byte[] data, byte length)
+	static void FrameReadCB(BrickletCAN sender, byte frameType, long identifier,
+	                        byte[] data, byte length)
 	{
 		Console.WriteLine("Frame Type: " + frameType);
 		Console.WriteLine("Identifier: " + identifier);

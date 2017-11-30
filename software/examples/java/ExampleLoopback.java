@@ -23,7 +23,8 @@ public class ExampleLoopback {
 
 		// Add frame read listener
 		can.addFrameReadListener(new BrickletCAN.FrameReadListener() {
-			public void frameRead(short frameType, long identifier, short[] data, short length) {
+			public void frameRead(short frameType, long identifier, short[] data,
+			                      short length) {
 				System.out.println("Frame Type: " + frameType);
 				System.out.println("Identifier: " + identifier);
 

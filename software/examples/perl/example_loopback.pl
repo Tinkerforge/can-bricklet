@@ -26,7 +26,7 @@ $ipcon->connect(&HOST, &PORT); # Connect to brickd
 # Configure transceiver for loopback mode
 $can->set_configuration($can->BAUD_RATE_1000KBPS, $can->TRANSCEIVER_MODE_LOOPBACK, 0);
 
-# Register read callback to subroutine cb_frame_read
+# Register frame read callback to subroutine cb_frame_read
 $can->register_callback($can->CALLBACK_FRAME_READ, 'cb_frame_read');
 
 # Enable frame read callback
