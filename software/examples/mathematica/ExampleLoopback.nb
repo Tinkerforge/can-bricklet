@@ -1,163 +1,51 @@
-(* Content-type: application/vnd.wolfram.mathematica *)
-
-(*** Wolfram Notebook File ***)
-(* http://www.wolfram.com/nb *)
-
-(* CreatedBy='Mathematica 9.0' *)
-
-(*CacheID: 234*)
-(* Internal cache information:
-NotebookFileLineBreakTest
-NotebookFileLineBreakTest
-NotebookDataPosition[       157,          7]
-NotebookDataLength[      5354,        154]
-NotebookOptionsPosition[      5079,        140]
-NotebookOutlinePosition[      5418,        155]
-CellTagsIndexPosition[      5375,        152]
-WindowFrame->Normal*)
-
-(* Beginning of Notebook Content *)
 Notebook[{
-Cell[BoxData[{
- RowBox[{"Needs", "[", "\"\<NETLink`\>\"", "]"}], "\n", 
- RowBox[{"LoadNETAssembly", "[", 
-  RowBox[{"\"\<Tinkerforge\>\"", ",", 
-   RowBox[{
-    RowBox[{"NotebookDirectory", "[", "]"}], "<>", "\"\<../../..\>\""}]}], 
-  "]"}]}], "Input",
- CellChangeTimes->{{3.676103284323448*^9, 3.676103322757663*^9}, {
-  3.676105221758296*^9, 3.676105242741219*^9}}],
-
-Cell[BoxData[{
- RowBox[{"host", "=", "\"\<localhost\>\""}], "\n", 
- RowBox[{"port", "=", "4223"}], "\n", 
- RowBox[{
-  RowBox[{"uid", "=", "\"\<XYZ\>\""}], 
-  RowBox[{"(*", 
-   RowBox[{"Change", " ", "to", " ", "your", " ", "UID"}], "*)"}], 
-  "\[IndentingNewLine]", "\[IndentingNewLine]", 
-  RowBox[{"(*", 
-   RowBox[{
-   "Create", " ", "IPConnection", " ", "and", " ", "device", " ", "object"}], 
-   "*)"}]}], "\n", 
- RowBox[{"ipcon", "=", 
-  RowBox[{"NETNew", "[", "\"\<Tinkerforge.IPConnection\>\"", "]"}]}], "\n", 
- RowBox[{"can", "=", 
-  RowBox[{"NETNew", "[", 
-   RowBox[{"\"\<Tinkerforge.BrickletCAN\>\"", ",", "uid", ",", "ipcon"}], 
-   "]"}]}], "\n", 
- RowBox[{
-  RowBox[{"ipcon", "@", 
-   RowBox[{"Connect", "[", 
-    RowBox[{"host", ",", "port"}], "]"}]}], "\[IndentingNewLine]", 
-  "\[IndentingNewLine]", 
-  RowBox[{"(*", 
-   RowBox[{
-   "Configure", " ", "transceiver", " ", "for", " ", "loopback", " ", 
-    "mode"}], "*)"}]}], "\n", 
- RowBox[{
-  RowBox[{"can", "@", 
-   RowBox[{"SetConfiguration", "[", 
-    RowBox[{
-    "BrickletCAN`BAUDURATEU1000KBPS", ",", 
-     "BrickletCAN`TRANSCEIVERUMODEULOOPBACK", ",", "0"}], "]"}]}], 
-  "\[IndentingNewLine]", "\n", 
-  RowBox[{"(*", 
-   RowBox[{
-   "Callback", " ", "function", " ", "for", " ", "frame", " ", "read", " ", 
-    "callback"}], "*)"}]}], "\[IndentingNewLine]", 
- RowBox[{
-  RowBox[{
-   RowBox[{"FrameReadCB", "[", 
-    RowBox[{
-    "sender_", ",", "frameType_", ",", "identifier_", ",", "data_", ",", 
-     "length_"}], "]"}], ":=", "\[IndentingNewLine]", 
-   RowBox[{"Module", "[", 
-    RowBox[{
-     RowBox[{"{", "}"}], ",", "\[IndentingNewLine]", 
-     RowBox[{
-      RowBox[{"Print", "[", 
-       RowBox[{"\"\<Frame Type: \>\"", "<>", 
-        RowBox[{"ToString", "[", 
-         RowBox[{"N", "[", "frameType", "]"}], "]"}]}], "]"}], ";", 
-      "\[IndentingNewLine]", 
-      RowBox[{"Print", "[", 
-       RowBox[{"\"\<Identifier: \>\"", "<>", 
-        RowBox[{"ToString", "[", 
-         RowBox[{"N", "[", "identifier", "]"}], "]"}]}], "]"}], ";", 
-      "\[IndentingNewLine]", 
-      RowBox[{"Print", "[", 
-       RowBox[{"\"\<Data (Length: \>\"", "<>", 
-        RowBox[{"ToString", "[", 
-         RowBox[{"N", "[", "length", "]"}], "]"}], "<>", "\"\<): \>\"", "<>", 
-        
-        RowBox[{"ToString", "[", "data", "]"}]}], "]"}]}]}], 
-    "\[IndentingNewLine]", "]"}]}], "\n"}], "\[IndentingNewLine]", 
- RowBox[{
-  RowBox[{"AddEventHandler", "[", 
-   RowBox[{
-    RowBox[{"can", "@", "FrameRead"}], ",", "FrameReadCB"}], "]"}], 
-  "\[IndentingNewLine]", "\n", 
-  RowBox[{"(*", 
-   RowBox[{"Enable", " ", "frame", " ", "read", " ", "callback"}], 
-   "*)"}]}], "\[IndentingNewLine]", 
- RowBox[{
-  RowBox[{"can", "@", 
-   RowBox[{"EnableFrameReadCallback", "[", "]"}]}], "\[IndentingNewLine]", 
-  "\n", 
-  RowBox[{"(*", 
-   RowBox[{
-   "Write", " ", "standard", " ", "data", " ", "frame", " ", "with", " ", 
-    "identifier", " ", "1742", " ", "and", " ", "3", " ", "bytes", " ", "of", 
-    " ", "data"}], "*)"}]}], "\[IndentingNewLine]", 
- RowBox[{"data", "=", 
-  RowBox[{"{", 
-   RowBox[{
-   "42", ",", "23", ",", "17", ",", "0", ",", "0", ",", "0", ",", "0", ",", 
-    "0"}], "}"}]}], "\n", 
- RowBox[{
-  RowBox[{"can", "@", 
-   RowBox[{"WriteFrame", "[", 
-    RowBox[{
-    "BrickletCAN`FRAMEUTYPEUSTANDARDUDATA", ",", "1742", ",", "data", ",", 
-     "3"}], "]"}]}], "\n"}], "\[IndentingNewLine]", 
- RowBox[{
-  RowBox[{"Input", "[", "\"\<Click OK to exit\>\"", "]"}], 
-  "\[IndentingNewLine]", "\n", 
-  RowBox[{"(*", 
-   RowBox[{"Clean", " ", "up"}], "*)"}]}], "\[IndentingNewLine]", 
- RowBox[{"can", "@", 
-  RowBox[{"DisableFrameReadCallback", "[", "]"}]}], "\n", 
- RowBox[{"ipcon", "@", 
-  RowBox[{"Disconnect", "[", "]"}]}], "\n", 
- RowBox[{"ReleaseNETObject", "[", "can", "]"}], "\n", 
- RowBox[{"ReleaseNETObject", "[", "ipcon", "]"}]}], "Input",
- CellChangeTimes->{{3.6761032902282047`*^9, 3.67610329391752*^9}, 
-   3.676103417443679*^9, {3.676103504623973*^9, 3.6761035065958757`*^9}, {
-   3.6761035419967546`*^9, 3.676103582404996*^9}, {3.676103645574781*^9, 
-   3.676103670502211*^9}, {3.6761052521505337`*^9, 3.6761052606165867`*^9}, 
-   3.676118304913842*^9}]
-},
-WindowSize->{1005, 881},
-WindowMargins->{{Automatic, 183}, {24, Automatic}},
-FrontEndVersion->"9.0 for Linux x86 (64-bit) (November 20, 2012)",
-StyleDefinitions->"Default.nb"
-]
-(* End of Notebook Content *)
-
-(* Internal cache information *)
-(*CellTagsOutline
-CellTagsIndex->{}
-*)
-(*CellTagsIndex
-CellTagsIndex->{}
-*)
-(*NotebookFileOutline
-Notebook[{
-Cell[557, 20, 367, 8, 55, "Input"],
-Cell[927, 30, 4148, 108, 803, "Input"]
-}
-]
-*)
-
-(* End of internal cache information *)
+ Cell[
+  BoxData[{
+   RowBox[{"Needs", "[", "\"\<NETLink`\>\"", "]"}],
+   RowBox[{"LoadNETAssembly", "[", RowBox[{"\"\<Tinkerforge\>\"", ",", RowBox[{RowBox[{"NotebookDirectory", "[", "]"}], "<>", "\"\<../../..\>\""}]}], "]"}]
+  }], "Input"
+ ],
+ Cell[
+  BoxData[{
+   RowBox[{"host", "=", "\"\<localhost\>\""}],
+   RowBox[{"port", "=", "4223"}],
+   RowBox[{"uid", "=", "\"\<XYZ\>\"", RowBox[{"(*", "Change XYZ to the UID of your CAN Bricklet", "*)"}]}],
+   RowBox[{"
+"}],
+   RowBox[{"(*", "Create IPConnection and device object", "*)"}],
+   RowBox[{"ipcon", "=", RowBox[{"NETNew", "[", "\"\<Tinkerforge.IPConnection\>\"", "]"}]}],
+   RowBox[{"can", "=", RowBox[{"NETNew", "[", RowBox[{"\"\<Tinkerforge.BrickletCAN\>\"", ",", "uid", ",", "ipcon"}], "]"}]}],
+   RowBox[{"ipcon", "@", RowBox[{"Connect", "[", RowBox[{"host", ",", "port"}], "]"}]}],
+   RowBox[{"
+"}],
+   RowBox[{"(*", "Configure transceiver for loopback mode", "*)"}],
+   RowBox[{"can", "@", RowBox[{"SetConfiguration", "[", RowBox[{"BrickletCAN`BAUDURATEU1000KBPS", ",", "BrickletCAN`TRANSCEIVERUMODEULOOPBACK", ",", "0"}], "]"}]}],
+   RowBox[{"
+"}],
+   RowBox[{"(*", "Callback function for frame read callback", "*)"}],
+   RowBox[{RowBox[{"FrameReadCB", "[", RowBox[{"sender_", ",", "frameType_", ",", "identifier_", ",", "data_", ",", "length_"}], "]"}], ":=", "\[IndentingNewLine]", RowBox[{"Module", "[", RowBox[{RowBox[{"{", "}"}], ",", RowBox[{"\[IndentingNewLine]", RowBox[{"Print", "[", RowBox[{"\"\<Frame Type: \>\"", "<>", RowBox[{"ToString", "[", RowBox[{"N", "[", "frameType", "]"}], "]"}]}], "]"}], ";", "\[IndentingNewLine]", RowBox[{"Print", "[", RowBox[{"\"\<Identifier: \>\"", "<>", RowBox[{"ToString", "[", RowBox[{"N", "[", "identifier", "]"}], "]"}]}], "]"}], ";", "\[IndentingNewLine]", RowBox[{"Print", "[", RowBox[{"\"\<Data (Length: \>\"", "<>", RowBox[{"ToString", "[", RowBox[{"N", "[", "length", "]"}], "]"}], "<>", "\"\<): \>\"", "<>", RowBox[{"ToString", "[", "data", "]"}]}], "]"}], "\[IndentingNewLine]"}]}], "]"}]}],
+   RowBox[{"
+"}],
+   RowBox[{"AddEventHandler", "[", RowBox[{RowBox[{"can", "@", "FrameReadCallback"}], ",", "FrameReadCB"}], "]"}],
+   RowBox[{"
+"}],
+   RowBox[{"(*", "Enable frame read callback", "*)"}],
+   RowBox[{"can", "@", RowBox[{"EnableFrameReadCallback", "[", "]"}]}],
+   RowBox[{"
+"}],
+   RowBox[{"(*", "Write standard data frame with identifier 1742 and 3 bytes of data", "*)"}],
+   RowBox[{"data", "=", RowBox[{"{", RowBox[{"42", ",", "23", ",", "17", ",", "0", ",", "0", ",", "0", ",", "0", ",", "0"}], "}"}]}],
+   RowBox[{"can", "@", RowBox[{"WriteFrame", "[", RowBox[{"BrickletCAN`FRAMEUTYPEUSTANDARDUDATA", ",", "1742", ",", "data", ",", "3"}], "]"}]}],
+   RowBox[{"
+"}],
+   RowBox[{"Input", "[", "\"\<Click OK to exit\>\"", "]"}],
+   RowBox[{"
+"}],
+   RowBox[{"(*", "Clean up", "*)"}],
+   RowBox[{"can", "@", RowBox[{"DisableFrameReadCallback", "[", "]"}]}],
+   RowBox[{"ipcon", "@", RowBox[{"Disconnect", "[", "]"}]}],
+   RowBox[{"ReleaseNETObject", "[", "can", "]"}],
+   RowBox[{"ReleaseNETObject", "[", "ipcon", "]"}]
+  }], "Input"
+ ]
+}]
