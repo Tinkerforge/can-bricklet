@@ -11,7 +11,8 @@ can=NETNew["Tinkerforge.BrickletCAN",uid,ipcon]
 ipcon@Connect[host,port]
 
 (*Configure transceiver for loopback mode*)
-can@SetConfiguration[BrickletCAN`BAUDURATEU1000KBPS,BrickletCAN`TRANSCEIVERUMODEULOOPBACK,0]
+can@SetConfiguration[Tinkerforge`BrickletCAN`BAUDURATEU1000KBPS,
+                     Tinkerforge`BrickletCAN`TRANSCEIVERUMODEULOOPBACK,0]
 
 (*Callback function for frame read callback*)
 FrameReadCB[sender_,frameType_,identifier_,data_,length_]:=

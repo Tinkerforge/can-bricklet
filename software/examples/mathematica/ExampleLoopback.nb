@@ -19,7 +19,7 @@ Notebook[{
    RowBox[{"
 "}],
    RowBox[{"(*", "Configure transceiver for loopback mode", "*)"}],
-   RowBox[{"can", "@", RowBox[{"SetConfiguration", "[", RowBox[{"BrickletCAN`BAUDURATEU1000KBPS", ",", "BrickletCAN`TRANSCEIVERUMODEULOOPBACK", ",", "0"}], "]"}]}],
+   RowBox[{"can", "@", RowBox[{"SetConfiguration", "[", RowBox[{"Tinkerforge`BrickletCAN`BAUDURATEU1000KBPS", ",", RowBox[{"\[IndentingNewLine]", "Tinkerforge`BrickletCAN`TRANSCEIVERUMODEULOOPBACK"}], ",", "0"}], "]"}]}],
    RowBox[{"
 "}],
    RowBox[{"(*", "Callback function for frame read callback", "*)"}],
