@@ -22,6 +22,7 @@ void cb_frame_read(uint8_t frame_type, uint32_t identifier, uint8_t data[8],
 	}
 
 	printf("\n");
+	printf("\n");
 }
 
 int main(void) {

@@ -12,14 +12,15 @@ Module ExampleLoopback
                     ByVal length As Byte)
         Console.WriteLine("Frame Type: {0}", frameType)
         Console.WriteLine("Identifier: {0}", identifier)
+        Console.Write("Data (Length: {0}):", length)
 
-        Dim s As String = "Data (Length: " & length & "):"
         Dim i As Integer
         For i = 0 To Math.Min(length - 1, 7)
-            s &= " " + data(i).ToString()
+            Console.Write(" " + data(i).ToString())
         Next i
 
-        Console.WriteLine(s)
+        Console.WriteLine("")
+        Console.WriteLine("")
     End Sub
 
     Sub Main()

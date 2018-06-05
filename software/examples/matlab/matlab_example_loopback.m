@@ -33,13 +33,14 @@ end
 
 % Callback function for frame read callback
 function cb_frame_read(e)
-    fprintf("Frame Type: %d\n", e.frameType);
-    fprintf("Identifier: %d\n", e.identifier);
-    fprintf("Data (Length: %d):", e.length);
+    fprintf('Frame Type: %d\n', e.frameType);
+    fprintf('Identifier: %d\n', e.identifier);
+    fprintf('Data (Length: %d):', e.length);
 
     for i = 1:min(e.length, 8)
-        fprintf(" %d", e.data(i));
+        fprintf(' %d', e.data(i));
     end
 
-    fprintf("\n");
+    fprintf('\n');
+    fprintf('\n');
 end

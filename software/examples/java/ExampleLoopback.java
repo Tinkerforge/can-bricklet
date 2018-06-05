@@ -27,13 +27,13 @@ public class ExampleLoopback {
 			                      short length) {
 				System.out.println("Frame Type: " + frameType);
 				System.out.println("Identifier: " + identifier);
+				System.out.print("Data (Length: " + length + "):");
 
-				String str = "Data (Length: " + length + "):";
 				for (short i = 0; i < length && i < 8; ++i) {
-					str += " " + data[i];
+					System.out.print(" " + data[i]);
 				}
 
-				System.out.println(str);
+				System.out.println("");
 				System.out.println("");
 			}
 		});

@@ -43,6 +43,7 @@ function cb_frame_read(e)
     end
 
     fprintf("\n");
+    fprintf("\n");
 end
 
 function int = java2int(value)

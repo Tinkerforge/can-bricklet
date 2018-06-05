@@ -26,6 +26,7 @@ can.register_callback(BrickletCAN::CALLBACK_FRAME_READ) do |frame_type, identifi
   puts "Frame Type: #{frame_type}"
   puts "Identifier: #{identifier}"
   puts "Data (Length: #{length}): #{data[0, [length, 8].min].join(' ')}"
+  puts ''
 end
 
 # Enable frame read callback

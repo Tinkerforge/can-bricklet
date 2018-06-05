@@ -13,13 +13,14 @@ class Example
 	{
 		Console.WriteLine("Frame Type: " + frameType);
 		Console.WriteLine("Identifier: " + identifier);
+		Console.Write("Data (Length: " + length + "):");
 
-		string s = "Data (Length: " + length + "):";
 		for (int i = 0; i < length && i < 8; ++i) {
-			s += " " + data[i];
+			Console.Write(" " + data[i]);
 		}
 
-		Console.WriteLine(s);
+		Console.WriteLine("");
+		Console.WriteLine("");
 	}
 
 	static void Main()

@@ -22,6 +22,7 @@ function cb_frameRead($frame_type, $identifier, $data, $length)
     }
 
     echo "\n";
+    echo "\n";
 }
 
 $ipcon = new IPConnection(); // Create IP connection

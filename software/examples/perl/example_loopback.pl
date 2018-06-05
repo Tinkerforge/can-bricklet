@@ -16,6 +16,7 @@ sub cb_frame_read
     print "Frame Type: " . $frame_type . "\n";
     print "Identifier: " . $identifier . "\n";
     print "Data (Length: " . $length . "): " . join(" ", @{$data}[0..($length, 8)[$length > 8] - 1]) . "\n";
+    print "\n";
 }
 
 my $ipcon = Tinkerforge::IPConnection->new(); # Create IP connection
