@@ -13,10 +13,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                                           // Don't use device before ipcon is connected
 
     // Configure transceiver for loopback mode
-    can.set_configuration(CAN_BRICKLET_BAUD_RATE_1000KBPS, CAN_BRICKLET_TRANSCEIVER_MODE_LOOPBACK, 0);
+    can.set_configuration(
+        CAN_BRICKLET_BAUD_RATE_1000KBPS,
+        CAN_BRICKLET_TRANSCEIVER_MODE_LOOPBACK,
+        0,
+    );
 
     let frame_read_receiver = can.get_frame_read_callback_receiver();
-    
+
     // Spawn thread to handle received events.
     // This thread ends when the `can` object
     // is dropped, so there is no need for manual cleanup.
