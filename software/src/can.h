@@ -37,10 +37,9 @@
 #define FID_GET_READ_FILTER 9
 #define FID_GET_ERROR_LOG 10
 #define FID_FRAME_READ 11
-#define FID_ENABLE_FRAME_READABLE_CALLBACK 12
-#define FID_DISABLE_FRAME_READABLE_CALLBACK 13
-#define FID_IS_FRAME_READABLE_CALLBACK_ENABLED 14
-#define FID_FRAME_READABLE 15
+#define FID_SET_FRAME_READABLE_CALLBACK_CONFIGURATION 12
+#define FID_GET_FRAME_READABLE_CALLBACK_CONFIGURATION 13
+#define FID_FRAME_READABLE 14
 
 #define BAUD_RATE_10000 0
 #define BAUD_RATE_20000 1
@@ -177,20 +176,17 @@ typedef struct {
 
 typedef struct {
 	MessageHeader header;
-} __attribute__((__packed__)) EnableFrameReadableCallback;
+	bool enabled;
+} __attribute__((__packed__)) SetFrameReadableCallbackConfiguration;
 
 typedef struct {
 	MessageHeader header;
-} __attribute__((__packed__)) DisableFrameReadableCallback;
-
-typedef struct {
-	MessageHeader header;
-} __attribute__((__packed__)) IsFrameReadableCallbackEnabled;
+} __attribute__((__packed__)) GetFrameReadableCallbackConfiguration;
 
 typedef struct {
 	MessageHeader header;
 	bool enabled;
-} __attribute__((__packed__)) IsFrameReadableCallbackEnabledReturn;
+} __attribute__((__packed__)) GetFrameReadableCallbackConfigurationReturn;
 
 void constructor(void);
 void destructor(void);
@@ -237,8 +233,7 @@ void get_read_filter(const ComType com, const GetReadFilter *data);
 
 void get_error_log(const ComType com, const GetErrorLog *data);
 
-void enable_frame_readable_callback(const ComType com, const EnableFrameReadableCallback *data);
-void disable_frame_readable_callback(const ComType com, const DisableFrameReadableCallback *data);
-void is_frame_readable_callback_enabled(const ComType com, const IsFrameReadableCallbackEnabled *data);
+void set_frame_readable_callback_configuration(const ComType com, const SetFrameReadableCallbackConfiguration *data);
+void get_frame_readable_callback_configuration(const ComType com, const GetFrameReadableCallbackConfiguration *data);
 
 #endif
