@@ -165,17 +165,20 @@ void destructor(void) {
 
 void invocation(const ComType com, const uint8_t *data) {
 	switch (((StandardMessage*)data)->header.fid) {
-		case FID_WRITE_FRAME:                    write_frame(com, (WriteFrame *)data); break;
-		case FID_READ_FRAME:                     read_frame(com, (ReadFrame *)data); break;
-		case FID_ENABLE_FRAME_READ_CALLBACK:     enable_frame_read_callback(com, (EnableFrameReadCallback*)data); break;
-		case FID_DISABLE_FRAME_READ_CALLBACK:    disable_frame_read_callback(com, (DisableFrameReadCallback*)data); break;
-		case FID_IS_FRAME_READ_CALLBACK_ENABLED: is_frame_read_callback_enabled(com, (IsFrameReadCallbackEnabled*)data); break;
-		case FID_SET_CONFIGURATION:              set_configuration(com, (SetConfiguration *)data); break;
-		case FID_GET_CONFIGURATION:              get_configuration(com, (GetConfiguration *)data); break;
-		case FID_SET_READ_FILTER:                set_read_filter(com, (SetReadFilter *)data); break;
-		case FID_GET_READ_FILTER:                get_read_filter(com, (GetReadFilter *)data); break;
-		case FID_GET_ERROR_LOG:                  get_error_log(com, (GetErrorLog *)data); break;
-		default:                                 BA->com_return_error(data, sizeof(MessageHeader), MESSAGE_ERROR_CODE_NOT_SUPPORTED, com); break;
+		case FID_WRITE_FRAME:                        write_frame(com, (WriteFrame *)data); break;
+		case FID_READ_FRAME:                         read_frame(com, (ReadFrame *)data); break;
+		case FID_ENABLE_FRAME_READ_CALLBACK:         enable_frame_read_callback(com, (EnableFrameReadCallback*)data); break;
+		case FID_DISABLE_FRAME_READ_CALLBACK:        disable_frame_read_callback(com, (DisableFrameReadCallback*)data); break;
+		case FID_IS_FRAME_READ_CALLBACK_ENABLED:     is_frame_read_callback_enabled(com, (IsFrameReadCallbackEnabled*)data); break;
+		case FID_SET_CONFIGURATION:                  set_configuration(com, (SetConfiguration *)data); break;
+		case FID_GET_CONFIGURATION:                  get_configuration(com, (GetConfiguration *)data); break;
+		case FID_SET_READ_FILTER:                    set_read_filter(com, (SetReadFilter *)data); break;
+		case FID_GET_READ_FILTER:                    get_read_filter(com, (GetReadFilter *)data); break;
+		case FID_GET_ERROR_LOG:                      get_error_log(com, (GetErrorLog *)data); break;
+		case FID_ENABLE_FRAME_READABLE_CALLBACK:     enable_frame_readable_callback(com, (EnableFrameReadableCallback*)data); break;
+		case FID_DISABLE_FRAME_READABLE_CALLBACK:    disable_frame_readable_callback(com, (DisableFrameReadableCallback*)data); break;
+		case FID_IS_FRAME_READABLE_CALLBACK_ENABLED: is_frame_readable_callback_enabled(com, (IsFrameReadableCallbackEnabled*)data); break;
+		default:                                     BA->com_return_error(data, sizeof(MessageHeader), MESSAGE_ERROR_CODE_NOT_SUPPORTED, com); break;
 	}
 }
 
@@ -339,6 +342,16 @@ void tick(const uint8_t tick_type) {
 			ba->com_make_default_header(&fr, BS->uid, sizeof(fr), FID_FRAME_READ);
 
 			rxb_dequeue(&fr.frame);
+
+			ba->send_blocking_with_timeout(&fr, sizeof(fr), *ba->com_current);
+		}
+		if ((bc->status & STATUS_FRAME_READABLE_CALLBACK_ENABLED) != 0 &&
+		    (bc->status & STATUS_FRAME_READABLE_CALLBACK_SENT) == 0 &&
+		    bc->rxb_start != bc->rxb_end) {
+			bc->status |= STATUS_FRAME_READABLE_CALLBACK_SENT;
+			FrameReadable fr;
+
+			ba->com_make_default_header(&fr, BS->uid, sizeof(fr), FID_FRAME_READABLE);
 
 			ba->send_blocking_with_timeout(&fr, sizeof(fr), *ba->com_current);
 		}
@@ -701,6 +714,8 @@ void write_frame(const ComType com, const WriteFrame *data) {
 }
 
 void read_frame(const ComType com, const ReadFrame *data) {
+	BC->status &= ~STATUS_FRAME_READABLE_CALLBACK_SENT;
+
 	// Need to zero whole message here because rxb_dequeue will
 	// not touch it if there is no frame to be read
 	ReadFrameReturn rfr = {{0}};
@@ -714,6 +729,7 @@ void read_frame(const ComType com, const ReadFrame *data) {
 
 void enable_frame_read_callback(const ComType com, const EnableFrameReadCallback *data) {
 	BC->status |= STATUS_FRAME_READ_CALLBACK_ENABLED;
+	BC->status &= ~STATUS_FRAME_READABLE_CALLBACK_ENABLED;
 	BA->com_return_setter(com, data);
 }
 
@@ -824,4 +840,28 @@ void get_error_log(const ComType com, const GetErrorLog *data) {
 	gelr.read_buffer_overflow_count   = bc->read_buffer_overflow_count;
 
 	BA->send_blocking_with_timeout(&gelr, sizeof(gelr), com);
+}
+
+void enable_frame_readable_callback(const ComType com, const EnableFrameReadableCallback *data) {
+	BC->status |= STATUS_FRAME_READABLE_CALLBACK_ENABLED;
+	BC->status &= ~STATUS_FRAME_READABLE_CALLBACK_SENT;
+
+	BC->status &= ~STATUS_FRAME_READ_CALLBACK_ENABLED;
+
+	BA->com_return_setter(com, data);
+}
+
+void disable_frame_readable_callback(const ComType com, const DisableFrameReadableCallback *data) {
+	BC->status &= ~STATUS_FRAME_READABLE_CALLBACK_ENABLED;
+	BA->com_return_setter(com, data);
+}
+
+void is_frame_readable_callback_enabled(const ComType com, const IsFrameReadableCallbackEnabled *data) {
+	IsFrameReadableCallbackEnabledReturn ifrcer;
+
+	ifrcer.header         = data->header;
+	ifrcer.header.length  = sizeof(ifrcer);
+	ifrcer.enabled        = (BC->status & STATUS_FRAME_READABLE_CALLBACK_ENABLED) != 0;
+
+	BA->send_blocking_with_timeout(&ifrcer, sizeof(ifrcer), com);
 }
