@@ -1,2 +1,5 @@
 2016-07-13: 2.0.0 (2696489)
 - Initial version
+
+2020-02-28: 2.0.1 (<unknown>)
+- Add frame readable callback
