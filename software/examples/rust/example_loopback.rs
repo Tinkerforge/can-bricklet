@@ -1,23 +1,23 @@
 use std::{error::Error, io, thread};
 use tinkerforge::{can_bricklet::*, ip_connection::IpConnection};
 
-const HOST: &str = "127.0.0.1";
+const HOST: &str = "localhost";
 const PORT: u16 = 4223;
-const UID: &str = "XYZ"; // Change XYZ to the UID of your CAN Bricklet
+const UID: &str = "XYZ"; // Change XYZ to the UID of your CAN Bricklet.
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let ipcon = IpConnection::new(); // Create IP connection
-    let can = CanBricklet::new(UID, &ipcon); // Create device object
+    let ipcon = IpConnection::new(); // Create IP connection.
+    let can = CanBricklet::new(UID, &ipcon); // Create device object.
 
-    ipcon.connect((HOST, PORT)).recv()??; // Connect to brickd
-                                          // Don't use device before ipcon is connected
+    ipcon.connect((HOST, PORT)).recv()??; // Connect to brickd.
+                                          // Don't use device before ipcon is connected.
 
     // Configure transceiver for loopback mode
     can.set_configuration(CAN_BRICKLET_BAUD_RATE_1000KBPS, CAN_BRICKLET_TRANSCEIVER_MODE_LOOPBACK, 0);
 
     let frame_read_receiver = can.get_frame_read_callback_receiver();
 
-    // Spawn thread to handle received events.
+    // Spawn thread to handle received callback messages.
     // This thread ends when the `can` object
     // is dropped, so there is no need for manual cleanup.
     thread::spawn(move || {
