@@ -42,7 +42,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Press enter to exit.");
     let mut _input = String::new();
     io::stdin().read_line(&mut _input)?;
+
     can.disable_frame_read_callback();
+
     ipcon.disconnect();
     Ok(())
 }

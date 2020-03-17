@@ -2,8 +2,8 @@
 
 setup:
 	# Configure transceiver for loopback mode
-	publish '{"baud_rate": "1000kbps", "transceiver_mode": "loopback", "write_timeout": 0}' to tinkerforge/request/can_bricklet/XYZ/set_configuration 
-	
+	publish '{"baud_rate": "1000kbps", "transceiver_mode": "loopback", "write_timeout": 0}' to tinkerforge/request/can_bricklet/XYZ/set_configuration
+
 	# Handle incoming frame read callbacks
 	subscribe to tinkerforge/callback/can_bricklet/XYZ/frame_read
         if a message arrives:
@@ -23,14 +23,14 @@ setup:
         endif
 	endsubscribe
 	
-	publish '{"register": true}' to tinkerforge/register/can_bricklet/XYZ/frame_read
-	
+	publish '{"register": true}' to tinkerforge/register/can_bricklet/XYZ/frame_read # Register frame_read callback
+
 	# Enable frame read callback
-	publish '' to tinkerforge/request/can_bricklet/XYZ/enable_frame_read_callback 
+	publish '' to tinkerforge/request/can_bricklet/XYZ/enable_frame_read_callback
 	
 	# Write standard data frame with identifier 1742 and 3 bytes of data
 	publish '{"frame_type": "StandardData", "identifier": 1742, "data": [42, 23, 17, 0, 0, 0, 0, 0], "length": 3}' to tinkerforge/request/can_bricklet/XYZ/write_frame 
 
 cleanup:
 	# If you are done, run this to clean up
-	publish '' to tinkerforge/request/can_bricklet/XYZ/disable_frame_read_callback 
+	publish '' to tinkerforge/request/can_bricklet/XYZ/disable_frame_read_callback

@@ -73,7 +73,9 @@ begin
 
   WriteLn('Press key to exit');
   ReadLn;
+
   can.DisableFrameReadCallback;
+
   ipcon.Destroy; { Calls ipcon.Disconnect internally }
 end;
 

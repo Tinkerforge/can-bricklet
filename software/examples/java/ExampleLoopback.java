@@ -46,7 +46,9 @@ public class ExampleLoopback {
 		can.writeFrame(BrickletCAN.FRAME_TYPE_STANDARD_DATA, (short)1742, data, (short)3);
 
 		System.out.println("Press key to exit"); System.in.read();
+
 		can.disableFrameReadCallback();
+
 		ipcon.disconnect();
 	}
 }

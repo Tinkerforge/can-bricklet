@@ -41,8 +41,9 @@ Notebook[{
    RowBox[{"Input", "[", "\"\<Click OK to exit\>\"", "]"}],
    RowBox[{"
 "}],
-   RowBox[{"(*", "Clean up", "*)"}],
    RowBox[{"can", "@", RowBox[{"DisableFrameReadCallback", "[", "]"}]}],
+   RowBox[{"
+"}],
    RowBox[{"ipcon", "@", RowBox[{"Disconnect", "[", "]"}]}],
    RowBox[{"ReleaseNETObject", "[", "can", "]"}],
    RowBox[{"ReleaseNETObject", "[", "ipcon", "]"}]

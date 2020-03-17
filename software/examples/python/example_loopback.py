@@ -35,5 +35,7 @@ if __name__ == "__main__":
     can.write_frame(can.FRAME_TYPE_STANDARD_DATA, 1742, [42, 23, 17, 0, 0, 0, 0, 0], 3)
 
     input("Press key to exit\n") # Use raw_input() in Python 2
+
     can.disable_frame_read_callback()
+
     ipcon.disconnect()
