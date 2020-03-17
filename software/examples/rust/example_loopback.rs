@@ -22,12 +22,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     // is dropped, so there is no need for manual cleanup.
     thread::spawn(move || {
         for frame_read in frame_read_receiver {
-            println!("Frame Type: {}", frame_read.frame_type);
+            if frame_read.frame_type == CAN_BRICKLET_FRAME_TYPE_STANDARD_DATA {
+                println!("Frame Type: Standard Data");
+            } else if frame_read.frame_type == CAN_BRICKLET_FRAME_TYPE_STANDARD_REMOTE {
+                println!("Frame Type: Standard Remote");
+            } else if frame_read.frame_type == CAN_BRICKLET_FRAME_TYPE_EXTENDED_DATA {
+                println!("Frame Type: Extended Data");
+            } else if frame_read.frame_type == CAN_BRICKLET_FRAME_TYPE_EXTENDED_REMOTE {
+                println!("Frame Type: Extended Remote");
+            }
+
             println!("Identifier: {}", frame_read.identifier);
             print!("Data (Length: {}):", frame_read.length);
+
             for item in frame_read.data.iter() {
                 print!(" {}", item);
             }
+
             println!();
             println!();
         }

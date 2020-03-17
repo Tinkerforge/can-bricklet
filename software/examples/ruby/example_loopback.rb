@@ -23,7 +23,16 @@ can.set_configuration BrickletCAN::BAUD_RATE_1000KBPS, \
 # Register frame read callback
 can.register_callback(BrickletCAN::CALLBACK_FRAME_READ) do |frame_type, identifier, data,
                                                             length|
-  puts "Frame Type: #{frame_type}"
+  if frame_type == BrickletCAN::FRAME_TYPE_STANDARD_DATA
+    puts "Frame Type: Standard Data"
+  elsif frame_type == BrickletCAN::FRAME_TYPE_STANDARD_REMOTE
+    puts "Frame Type: Standard Remote"
+  elsif frame_type == BrickletCAN::FRAME_TYPE_EXTENDED_DATA
+    puts "Frame Type: Extended Data"
+  elsif frame_type == BrickletCAN::FRAME_TYPE_EXTENDED_REMOTE
+    puts "Frame Type: Extended Remote"
+  end
+
   puts "Identifier: #{identifier}"
   puts "Data (Length: #{length}): #{data[0, [length, 8].min].join(' ')}"
   puts ''

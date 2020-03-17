@@ -25,7 +25,16 @@ public class ExampleLoopback {
 		can.addFrameReadListener(new BrickletCAN.FrameReadListener() {
 			public void frameRead(short frameType, long identifier, short[] data,
 			                      short length) {
-				System.out.println("Frame Type: " + frameType);
+				if(frameType == BrickletCAN.FRAME_TYPE_STANDARD_DATA) {
+					System.out.println("Frame Type: Standard Data");
+				} else if(frameType == BrickletCAN.FRAME_TYPE_STANDARD_REMOTE) {
+					System.out.println("Frame Type: Standard Remote");
+				} else if(frameType == BrickletCAN.FRAME_TYPE_EXTENDED_DATA) {
+					System.out.println("Frame Type: Extended Data");
+				} else if(frameType == BrickletCAN.FRAME_TYPE_EXTENDED_REMOTE) {
+					System.out.println("Frame Type: Extended Remote");
+				}
+
 				System.out.println("Identifier: " + identifier);
 				System.out.print("Data (Length: " + length + "):");
 

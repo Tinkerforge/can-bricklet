@@ -10,9 +10,18 @@ Module ExampleLoopback
     Sub FrameReadCB(ByVal sender As BrickletCAN, ByVal frameType As Byte, _
                     ByVal identifier As Long, ByVal data As Byte(), _
                     ByVal length As Byte)
-        Console.WriteLine("Frame Type: {0}", frameType)
-        Console.WriteLine("Identifier: {0}", identifier)
-        Console.Write("Data (Length: {0}):", length)
+        If frameType = BrickletCAN.FRAME_TYPE_STANDARD_DATA Then
+            Console.WriteLine("Frame Type: Standard Data")
+        Else If frameType = BrickletCAN.FRAME_TYPE_STANDARD_REMOTE Then
+            Console.WriteLine("Frame Type: Standard Remote")
+        Else If frameType = BrickletCAN.FRAME_TYPE_EXTENDED_DATA Then
+            Console.WriteLine("Frame Type: Extended Data")
+        Else If frameType = BrickletCAN.FRAME_TYPE_EXTENDED_REMOTE Then
+            Console.WriteLine("Frame Type: Extended Remote")
+        End If
+
+        Console.WriteLine("Identifier: " + identifier.ToString())
+        Console.Write("Data (Length: " + length.ToString() + "):")
 
         Dim i As Integer
         For i = 0 To Math.Min(length - 1, 7)

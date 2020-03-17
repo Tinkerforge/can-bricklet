@@ -11,7 +11,23 @@ class Example
 	static void FrameReadCB(BrickletCAN sender, byte frameType, long identifier,
 	                        byte[] data, byte length)
 	{
-		Console.WriteLine("Frame Type: " + frameType);
+		if(frameType == BrickletCAN.FRAME_TYPE_STANDARD_DATA)
+		{
+			Console.WriteLine("Frame Type: Standard Data");
+		}
+		else if(frameType == BrickletCAN.FRAME_TYPE_STANDARD_REMOTE)
+		{
+			Console.WriteLine("Frame Type: Standard Remote");
+		}
+		else if(frameType == BrickletCAN.FRAME_TYPE_EXTENDED_DATA)
+		{
+			Console.WriteLine("Frame Type: Extended Data");
+		}
+		else if(frameType == BrickletCAN.FRAME_TYPE_EXTENDED_REMOTE)
+		{
+			Console.WriteLine("Frame Type: Extended Remote");
+		}
+
 		Console.WriteLine("Identifier: " + identifier);
 		Console.Write("Data (Length: " + length + "):");
 

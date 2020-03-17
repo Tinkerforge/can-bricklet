@@ -33,7 +33,19 @@ ipcon.on(Tinkerforge.IPConnection.CALLBACK_CONNECTED,
 can.on(Tinkerforge.BrickletCAN.CALLBACK_FRAME_READ,
     // Callback function for frame read callback
     function (frameType, identifier, data, len) {
-        console.log('Frame Type: ' + frameType);
+        if(frameType === Tinkerforge.BrickletCAN.FRAME_TYPE_STANDARD_DATA) {
+            console.log('Frame Type: Standard Data');
+        }
+        else if(frameType === Tinkerforge.BrickletCAN.FRAME_TYPE_STANDARD_REMOTE) {
+            console.log('Frame Type: Standard Remote');
+        }
+        else if(frameType === Tinkerforge.BrickletCAN.FRAME_TYPE_EXTENDED_DATA) {
+            console.log('Frame Type: Extended Data');
+        }
+        else if(frameType === Tinkerforge.BrickletCAN.FRAME_TYPE_EXTENDED_REMOTE) {
+            console.log('Frame Type: Extended Remote');
+        }
+
         console.log('Identifier: ' + identifier);
 
         var str = 'Data (Length: ' + len + '):';

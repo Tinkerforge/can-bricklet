@@ -32,7 +32,19 @@ procedure TExample.FrameReadCB(sender: TBrickletCAN; const frameType: byte;
                                const len: byte);
 var i: integer;
 begin
-  WriteLn(Format('Frame Type: %d', [frameType]));
+  if (frameType = BRICKLET_CAN_FRAME_TYPE_STANDARD_DATA) then begin
+    WriteLn('Frame Type: Standard Data');
+  end
+  else if (frameType = BRICKLET_CAN_FRAME_TYPE_STANDARD_REMOTE) then begin
+    WriteLn('Frame Type: Standard Remote');
+  end
+  else if (frameType = BRICKLET_CAN_FRAME_TYPE_EXTENDED_DATA) then begin
+    WriteLn('Frame Type: Extended Data');
+  end
+  else if (frameType = BRICKLET_CAN_FRAME_TYPE_EXTENDED_REMOTE) then begin
+    WriteLn('Frame Type: Extended Remote');
+  end;
+
   WriteLn(Format('Identifier: %d', [identifier]));
   Write(Format('Data (Length: %d):', [len]));
   for i := 0 to (len - 1) do begin
@@ -40,6 +52,7 @@ begin
       Write(Format(' %d', [data[i]]));
     end;
   end;
+
   WriteLn('');
   WriteLn('');
 end;

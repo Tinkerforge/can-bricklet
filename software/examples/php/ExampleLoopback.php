@@ -13,8 +13,17 @@ const UID = 'XYZ'; // Change XYZ to the UID of your CAN Bricklet
 // Callback function for frame read callback
 function cb_frameRead($frame_type, $identifier, $data, $length)
 {
-    echo "Frame Type: " . $frame_type . "\n";
-    echo "Identifier: " . $identifier . "\n";
+    if ($frame_type == BrickletCAN::FRAME_TYPE_STANDARD_DATA) {
+        echo "Frame Type: Standard Data\n";
+    } elseif ($frame_type == BrickletCAN::FRAME_TYPE_STANDARD_REMOTE) {
+        echo "Frame Type: Standard Remote\n";
+    } elseif ($frame_type == BrickletCAN::FRAME_TYPE_EXTENDED_DATA) {
+        echo "Frame Type: Extended Data\n";
+    } elseif ($frame_type == BrickletCAN::FRAME_TYPE_EXTENDED_REMOTE) {
+        echo "Frame Type: Extended Remote\n";
+    }
+
+    echo "Identifier: $identifier\n";
     echo "Data (Length: " . $length . "):";
 
     for ($i = 0; $i < $length && $i < 8; ++$i) {

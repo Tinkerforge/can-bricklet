@@ -23,7 +23,6 @@ func main() {
 		can_bricklet.TransceiverModeLoopback, 0)
 
 	can.RegisterFrameReadCallback(func(frameType can_bricklet.FrameType, identifier uint32, data [8]uint8, length uint8) {
-
 		if frameType == can_bricklet.FrameTypeStandardData {
 			fmt.Println("Frame Type: Standard Data")
 		} else if frameType == can_bricklet.FrameTypeStandardRemote {
@@ -34,11 +33,14 @@ func main() {
 			fmt.Println("Frame Type: Extended Remote")
 		}
 
-		fmt.Println("Identifier: ", identifier)
+		fmt.Printf("Identifier: %d\n", identifier)
+		fmt.Printf("Data (Length: %d):", length)
+
 		for _, item := range data {
-			fmt.Println("Data: ", item)
+			fmt.Printf(" %d", item)
 		}
-		fmt.Println("Length: ", length)
+
+		fmt.Println()
 		fmt.Println()
 	})
 

@@ -36,7 +36,16 @@ function cb_frame_read(e)
     data = e.data;
     len = java2int(e.length);
 
-    fprintf("Frame Type: %d\n", java2int(e.frameType));
+    if java2int(e.frameType) == 0
+        fprintf("Frame Type: Standard Data\n");
+    elseif java2int(e.frameType) == 1
+        fprintf("Frame Type: Standard Remote\n");
+    elseif java2int(e.frameType) == 2
+        fprintf("Frame Type: Extended Data\n");
+    elseif java2int(e.frameType) == 3
+        fprintf("Frame Type: Extended Remote\n");
+    end
+
     fprintf("Identifier: %d\n", java2int(e.identifier));
     fprintf("Data (Length: %d):", len);
 

@@ -17,8 +17,11 @@ can@SetConfiguration[Tinkerforge`BrickletCAN`BAUDURATEU1000KBPS,
 (*Callback function for frame read callback*)
 FrameReadCB[sender_,frameType_,identifier_,data_,length_]:=
  Module[{},
-  Print["Frame Type: "<>ToString[N[frameType]]];
-  Print["Identifier: "<>ToString[N[identifier]]];
+  If[frameType==Tinkerforge`BrickletCAN`FRAMEUTYPEUSTANDARDUDATA,Print["Frame Type: Standard Data"]];
+  If[frameType==Tinkerforge`BrickletCAN`FRAMEUTYPEUSTANDARDUREMOTE,Print["Frame Type: Standard Remote"]];
+  If[frameType==Tinkerforge`BrickletCAN`FRAMEUTYPEUEXTENDEDUDATA,Print["Frame Type: Extended Data"]];
+  If[frameType==Tinkerforge`BrickletCAN`FRAMEUTYPEUEXTENDEDUREMOTE,Print["Frame Type: Extended Remote"]];
+  Print["Identifier: "<>ToString[identifier]];
   Print["Data (Length: "<>ToString[N[length]]<>"): "<>ToString[data]]
  ]
 
