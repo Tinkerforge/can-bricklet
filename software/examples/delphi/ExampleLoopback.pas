@@ -14,7 +14,7 @@ type
   public
     procedure FrameReadCB(sender: TBrickletCAN; const frameType: byte;
                           const identifier: longword; const data: TArray0To7OfUInt8;
-                          const len: byte);
+                          const length_: byte);
     procedure Execute;
   end;
 
