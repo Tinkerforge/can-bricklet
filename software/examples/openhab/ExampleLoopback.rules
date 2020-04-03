@@ -1,0 +1,60 @@
+// For this example configure your CAN Bricklet to loopback mode in Paper UI.
+
+import java.util.Arrays
+
+val FRAME_TYPE_STANDARD_DATA = 0 as short
+val FRAME_TYPE_STANDARD_REMOTE = 1 as short
+val FRAME_TYPE_EXTENDED_DATA = 2 as short
+val FRAME_TYPE_EXTENDED_REMOTE = 3 as short
+
+rule "send"
+when
+    System started // Replace with trigger of your choice
+then
+    // Change XYZ to the UID of your CAN Bricklet
+    val canActions = getActions("tinkerforge", "tinkerforge:brickletcan:XYZ")
+
+    var data = newShortArrayOfSize(8)
+    data.set(0, 42 as short)
+    data.set(1, 23 as short)
+    data.set(2, 17 as short)
+
+    // Write standard data frame with identifier 1742 and 3 bytes of data
+    canActions.brickletCANWriteFrame(FRAME_TYPE_STANDARD_DATA, 1742 as short, data, 3 as short)
+end
+
+rule "receive"
+when
+    // Change XYZ to the UID of your CAN Bricklet
+    Channel "tinkerforge:brickletcan:XYZ:BrickletCANFrameReadable" triggered
+then
+    // Change XYZ to the UID of your CAN Bricklet
+    val canActions = getActions("tinkerforge", "tinkerforge:brickletcan:XYZ")
+    val frame = canActions.brickletCANReadFrame()
+    
+    val success = frame.get("success") as boolean
+    if (success) {
+        val frameType = frame.get("frameType") as short
+
+        if(frameType == FRAME_TYPE_STANDARD_DATA) {
+            logInfo("Example", "Frame Type: Standard Data")
+        } else if(frameType == FRAME_TYPE_STANDARD_REMOTE) {
+            logInfo("Example", "Frame Type: Standard Remote")
+        } else if(frameType == FRAME_TYPE_EXTENDED_DATA) {
+            logInfo("Example", "Frame Type: Extended Data")
+        } else if(frameType == FRAME_TYPE_EXTENDED_REMOTE) {
+            logInfo("Example", "Frame Type: Extended Remote")
+        }
+
+        logInfo("Example", "Identifier: " + frame.get("identifier"))
+        
+        // Extract data
+        val len = frame.get("length") as int
+        var data = frame.get("data") as short[]
+        data = Arrays.copyOfRange(data, 0, len)
+
+        logInfo("Example", "Data (Length: " + len + "): " + Arrays.toString(data))
+    } else {
+        logInfo("Example", "Failed to read frame")
+    }
+end
